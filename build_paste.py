@@ -1,0 +1,106 @@
+#!/usr/bin/env python3.12
+"""Assemble a pasteable bound prompt: KERNEL + JOB + sources, copied byte-exact.
+
+Three independent stamps. KERNEL is the invariant instrument, JOB is the task,
+SOURCES are the material. A source edit moves only its own digest, so a changed
+instrument cannot hide behind a changed spec.
+
+    python3.12 build_paste.py verify
+"""
+import datetime
+import hashlib
+import pathlib
+import re
+import sys
+
+BS = pathlib.Path.home() / "Documents/_PROJECTS/SOFTWARE/blacksmith"
+LAWS = pathlib.Path.home() / "Documents/_PROJECTS/SOFTWARE/Claudes Laws"
+KERNEL = BS / "KERNEL_bound.md"
+RULING = BS / "Blacksmith Pipeline Redesign/Bound redesign and prompt/BLACKSMITH_REDESIGN.md"
+
+LAW_FILES = [
+    ("LAW 1", LAWS / "claudes-law 1.md"),
+    ("LAW 2", LAWS / "Claudes Law 2.txt"),
+    ("LAW 3", LAWS / "Claudes law 3.md"),
+]
+
+JOBS = {
+    "verify": {
+        "job": BS / "JOB_verify_ruling.md",
+        "sources": LAW_FILES + [
+            ("SPEC", BS / "SPEC.md"),
+            ("ASSUMPTIONS", BS / "ASSUMPTIONS.md"),
+            ("RULING", RULING),
+        ],
+        "out": BS / "PROMPT_VERIFY_PASTE.md",
+    },
+}
+
+# Printed, never pasted: the model cannot act on it and the prompt admits
+# nothing outside the shape the job specifies.
+RULE = """
+IF a SOURCES digest moved  → regenerate. Expected; sources change.
+IF the JOB digest moved    → a different task. Check it is the one you want.
+IF the KERNEL digest moved → the instrument changed.
+                             Law 1 ruling required before use."""
+
+
+def digest(text):
+    return hashlib.sha256(text.encode()).hexdigest()[:12]
+
+
+def fence(text):
+    """Outrun the longest backtick run inside, or the source's own fences close
+    the wrapper early and the remainder reads as instruction."""
+    longest = max((len(m) for m in re.findall(r"`+", text)), default=0)
+    return "`" * max(3, longest + 1)
+
+
+def build(name):
+    spec = JOBS[name]
+    kernel, job = KERNEL.read_text(), spec["job"].read_text()
+
+    bodies, stamp = [], []
+    for label, src in spec["sources"]:
+        text = src.read_text()
+        stamp.append(f"    {label:<12} {src.name:<28} sha256:{digest(text)}")
+        f = fence(text)
+        bodies.append(f"\n### {label} — {src.name}\n\n{f}\n{text.rstrip()}\n{f}\n")
+
+    header = f"""
+
+---
+
+## STAMPS
+
+```
+    KERNEL       {KERNEL.name:<28} sha256:{digest(kernel)}
+    JOB          {spec['job'].name:<28} sha256:{digest(job)}
+```
+
+Sources, copied verbatim {datetime.date.today().isoformat()}:
+
+```
+{chr(10).join(stamp)}
+```
+
+---
+
+## PASTED FILES
+
+Everything below this line is the whole of what you may use.
+"""
+
+    spec["out"].write_text(kernel + "\n---\n\n" + job + header + "".join(bodies))
+    print(f"wrote {spec['out'].name} ({spec['out'].stat().st_size:,} bytes)")
+    print(f"    KERNEL       {KERNEL.name:<28} sha256:{digest(kernel)}")
+    print(f"    JOB          {spec['job'].name:<28} sha256:{digest(job)}")
+    print("\n".join(stamp))
+    print(RULE)
+
+
+if __name__ == "__main__":
+    name = sys.argv[1] if len(sys.argv) > 1 else ""
+    if name not in JOBS:
+        raise SystemExit(f"usage: build_paste.py {{{','.join(JOBS)}}}")
+    build(name)

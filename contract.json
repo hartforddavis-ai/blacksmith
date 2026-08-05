@@ -1,0 +1,12 @@
+{
+  "contract_version": 1,
+  "contract_id": "proof-core-1",
+  "runner_id": "blacksmith-gauge-1",
+  "precedence": ["BYPASSED", "FAILED", "UNKNOWN", "ACTIVE"],
+  "required_checks": [
+    "artifact_hash_matches_manifest",
+    "runner_integrity_verified",
+    "no_generator_write_to_checker_tree",
+    "tests_pass"
+  ]
+}

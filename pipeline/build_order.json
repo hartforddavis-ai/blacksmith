@@ -1,0 +1,44 @@
+[
+  {
+    "step": 0,
+    "name": "Credential/UID feasibility",
+    "status": "BLOCKED_OWNER",
+    "requires": [],
+    "why": "SPEC §8 kill criterion. Running it wrong and getting a false PASS validates the design's central claim falsely, so it is not a generator cycle. Needs Scott's design session."
+  },
+  {
+    "step": 1,
+    "name": "Cell + attest + sterile-launch proof",
+    "status": "OPEN",
+    "requires": [],
+    "why": "SPEC §9: the real Blacksmith boundary test. Does not wait on gate !16 — the boundary moved to the OS."
+  },
+  {
+    "step": 2,
+    "name": "promote wired to Marrow",
+    "status": "OPEN",
+    "requires": [1],
+    "why": "Hardest proof point; pure host code, no model, no rate limits."
+  },
+  {
+    "step": 3,
+    "name": "Patch boundary / clean room",
+    "status": "OPEN",
+    "requires": [],
+    "why": "scope.ScopeGuard is the seed: realpath before prefix compare, regular-file requirement."
+  },
+  {
+    "step": 4,
+    "name": "gauge onto forensic_checker's ledger",
+    "status": "OPEN",
+    "requires": [3],
+    "why": "Reuse the hash-chained ledger; do not rewrite it."
+  },
+  {
+    "step": 5,
+    "name": "Adversarial harness",
+    "status": "OPEN",
+    "requires": [1, 2, 3],
+    "why": "Forged verdict, replayed verdict, tampered manifest, missing-evidence-as-pass, BYPASSED laundered as ACTIVE, ../ in a patch, symlink, .git/hooks."
+  }
+]

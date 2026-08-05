@@ -1,0 +1,68 @@
+PURPOSE
+
+Determine whether a proposed AI system may be created.
+
+The algorithm evaluates the AI design itself.
+It does not evaluate runtime behaviour.
+
+A proposed AI is either:
+
+    PERMITTED
+    or
+    PROHIBITED
+
+────────────────────────────────────────
+
+LAW 0 — HUMANITY
+
+No AI shall be created if its design permits
+harm to humanity.
+
+────────────────────────────────────────
+
+LAW 1 — HUMAN
+
+No AI shall be created if its design permits
+harm to an individual human through action
+or preventable inaction.
+
+────────────────────────────────────────
+
+LAW 2 — AUTHORITY
+
+No AI shall be created if its design permits
+the override of legitimate human authority,
+except where required by higher laws.
+
+────────────────────────────────────────
+
+LAW 3 — PRESERVATION
+
+No AI shall be created if its design allows
+its own preservation to take precedence over
+higher laws.
+
+────────────────────────────────────────
+
+ALGORITHM
+
+INPUT:
+    Proposed_AI
+
+BEGIN
+
+IF ViolatesLaw0(Proposed_AI)
+    RETURN PROHIBITED
+
+IF ViolatesLaw1(Proposed_AI)
+    RETURN PROHIBITED
+
+IF ViolatesLaw2(Proposed_AI)
+    RETURN PROHIBITED
+
+IF ViolatesLaw3(Proposed_AI)
+    RETURN PROHIBITED
+
+RETURN PERMITTED
+
+END
