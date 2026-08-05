@@ -124,3 +124,21 @@ class ObjectStore:
         if not real.is_file():
             raise StoreError(f"{str(real)!r} is not a regular file")
         return self.put_bytes(real.read_bytes())
+
+
+def as_check(store: ObjectStore, object_id) -> dict:
+    """Render a store lookup as a gauge check entry.
+
+    Re-derivation, not duplication: `get()` already re-hashes on every read
+    and raises `StoreError` (or its `IntegrityError` subclass) the moment the
+    bytes on disk don't hash to the id they're filed under. This renders that
+    existing outcome into gauge's CHECK_OUTCOMES rather than hashing a second
+    time — a second hashing path is exactly what gauge's own docstring warns
+    this tree against.
+    """
+    try:
+        data = store.get(object_id)
+    except StoreError as exc:
+        return {"outcome": "FAIL", "detail": str(exc)}
+    return {"outcome": "PASS",
+            "detail": "artifact re-hashed to its declared id", "size": len(data)}
