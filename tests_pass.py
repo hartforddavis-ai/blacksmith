@@ -25,6 +25,12 @@ discovery finds nothing to run. Unittest's own contract already refuses to
 call an empty run a pass, so there is no zero-tests-reported-as-PASS case
 left to guard against separately. A run either succeeds or it doesn't;
 there is no third state to force, matching `store.as_check`'s reasoning.
+
+Bounded: a hung suite is a demonstrated failure, not a hypothetical one --
+this session's own bundle.py bug drove this exact subprocess into a live,
+unbounded recursive hang that needed a manual `pkill` to end. A timeout
+turns that into an ordinary FAIL instead of a wait with no ceiling on
+whatever called `as_check`.
 """
 
 from __future__ import annotations
@@ -34,6 +40,8 @@ import sys
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
+
+TIMEOUT_SECONDS = 120
 
 
 def as_check(root: Path | None = None) -> dict:
@@ -45,13 +53,18 @@ def as_check(root: Path | None = None) -> dict:
     tree's own suite, of which this check's test is itself a member.
     """
     target = root or HERE
-    result = subprocess.run(
-        [sys.executable, "-m", "unittest", "discover",
-         "-s", str(target), "-p", "test_*.py"],
-        cwd=str(target),
-        capture_output=True,
-        text=True,
-    )
+    try:
+        result = subprocess.run(
+            [sys.executable, "-m", "unittest", "discover",
+             "-s", str(target), "-p", "test_*.py"],
+            cwd=str(target),
+            capture_output=True,
+            text=True,
+            timeout=TIMEOUT_SECONDS,
+        )
+    except subprocess.TimeoutExpired:
+        return {"outcome": "FAIL",
+                "detail": f"test suite did not finish within {TIMEOUT_SECONDS}s"}
     if result.returncode == 0:
         return {"outcome": "PASS", "detail": "test suite passed"}
     return {"outcome": "FAIL",

@@ -204,3 +204,84 @@ different shape from the last three (I/O of a subprocess, not a hash
 comparison) and needs its own Law 1 pass on what "the suite" means for a
 live bundle (this tree's own tests? the generated artifact's tests, if
 any exist?). Full detail in `KERNEL_WIRE_TESTS_PASS_CHECK.md`.
+
+## SESSION 6 — `tests_pass` closed; bundle assembler in progress, 5 Aug 2026
+
+**Stage 1 — `tests_pass`, DONE.** Ruled the suite means this tree's own
+`test_*.py` files (candidate 2, a generated artifact's own tests, rejected:
+grepped SPEC.md and ASSUMPTIONS.md, neither names artifacts as carrying
+tests — wiring against that would be G5 fabrication). Not redundant with
+`runner_integrity_verified`: manifest checks whether Ring 0 bytes match
+what was sealed; `tests_pass` checks whether that code still satisfies its
+own suite — different failure shapes. Added `tests_pass.py`: subprocess
+`python3 -m unittest discover`, exit code → PASS/FAIL, no UNKNOWN branch
+(unittest's own exit 5 on zero-tests-discovered already refuses to call an
+empty run a pass, so G5's trap is foreclosed by unittest's own contract,
+not a fabricated third branch). Three tests in `test_tests_pass.py`, each
+against a disposable temp dir — never this tree's own suite, so the check
+under test cannot re-invoke the suite it is itself a member of. MANIFEST.sha256
+regenerated. Full suite 168/168. Commit `3c1cdc5`.
+
+**Stage 2 — bundle-assembly driver, scope revised mid-build.** Started
+from "assemble `bundle["checks"]` for a live pivot run." Checked what a
+live run currently produces: `run_bound.py` / `occupant_bound.py` /
+`attest.py` / `store.py` each exist standalone; nothing wires them
+end-to-end, and nothing serializes an attest report or a staged artifact
+id to disk — `runs/pivot_smoke.qwen3.5-9b.20260805T091739.md` is still
+hand-written. Building the full live-run orchestration now would be a
+second, larger step smuggled into this one (Law 3 violation). Revised
+down to the piece Law 1 actually supports: `bundle.assemble()`, a pure
+packaging function taking an already-produced `attest_report` dict and a
+`(store, artifact_id)` pair as arguments — never re-deriving them — and
+calling the four now-complete `as_check()`s into `bundle["checks"]`, plus
+`bundle_version` and a `contract_sha256` hashed fresh on every call (never
+pinned: a stored hash is the exact drift `manifest.py`'s own docstring
+warns a hand-maintained list would reintroduce). `runner` stays optional,
+omitted by default — an absent runner reports UNKNOWN via gauge's own
+`runner_mismatch`, honestly, not patched over here. No CLI: nothing in
+this tree yet writes a real attest report or artifact id to disk for a
+command to read, so a CLI now would have nothing real to point at.
+
+**Stage 2 continued — fork bomb, found and killed live.** First run of the
+full suite after `bundle.py`/`test_bundle.py` landed did not finish inside
+a 120s timeout. Cause: `bundle.assemble()` calls `tests_pass.as_check()`
+with no argument, which defaults to the real tree; `test_bundle.py`'s own
+tests called `assemble()` unmocked. Running the suite therefore discovered
+`test_bundle.py`, whose tests called `assemble()`, which called
+`tests_pass.as_check()` on the real tree, which subprocess-spawned
+`python3 -m unittest discover` over that same tree — rediscovering
+`test_bundle.py` and repeating, unbounded. `ps` showed multiple live
+`unittest discover` child processes still forking. Killed with `pkill -9
+-f "unittest discover"` (several passes; new children kept appearing
+until the parent was also killed), confirmed clean via `ps` before
+touching anything else.
+
+Fix: `test_bundle.py` now patches `manifest.as_check` and
+`tests_pass.as_check` via `mock.patch.object` in `setUp`, so `assemble()`
+is exercised for real but the two calls that default to the real tree
+never fire during this tree's own test run — same shape as
+`test_manifest.py`'s `AsCheckTests`, which patches `HERE`/`MANIFEST` for
+the identical reason. Verified in isolation first (`python3 -m unittest
+test_bundle -v`, 8/8 in 0.006s, no child processes after) before re-running
+the full suite. Full suite 176/176 in 2.25s, no stray processes.
+
+**Stage 3 — Temper: the timeout gap it exposed, fixed same session.**
+The recursion fix stopped the fork bomb, but the underlying subprocess
+call in `tests_pass.as_check` still had no timeout — a different hang
+cause could block it the same way, with no automatic recovery, exactly as
+just happened. Added `TIMEOUT_SECONDS = 120`, caught
+`subprocess.TimeoutExpired` → FAIL. One new test in `test_tests_pass.py`
+(`TIMEOUT_SECONDS` patched to `0.1` against a synthetic test file that
+sleeps 5s, confirms FAIL with a "did not finish" detail, not a hang).
+MANIFEST.sha256 regenerated (19 files). Full suite 177/177 in 3.12s, no
+stray processes. Commit pending.
+
+**Lesson for `FAILURE_LOG.md`'s READ RULE:** this was a build-time
+mechanism failure (Law 2, ran and produced a live resource-exhaustion
+risk on the owner's machine), not a Law 1 scoping error — the check being
+composed was fine individually; the bug was a default argument creating a
+cycle only visible once two real, unmocked check calls were chained
+together in a test that is itself inside the tree being checked. Any
+future `as_check`-style function that defaults to `HERE`/the real tree
+must be treated as unsafe to call unmocked from a test in this same tree,
+full stop — not just `tests_pass`'s subprocess path.

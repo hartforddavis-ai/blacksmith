@@ -1,13 +1,16 @@
 """Coverage for tests_pass.as_check -- the `tests_pass` mechanism.
 
-Three cases: PASS when the discovered suite is green; FAIL when a
-discovered test fails; and FAIL, not PASS, when discovery finds nothing to
-run at all -- per G5 in KERNEL_WIRE_TESTS_PASS_CHECK.md, a check that
-reports PASS because nothing was compared is not a check, and unittest's
-own exit code (5, on an empty run) already refuses to call that a success.
-Each case runs against a disposable temp directory, never against this
-tree's own test_*.py files, so the check under test never re-invokes the
-suite it is itself a member of.
+Four cases: PASS when the discovered suite is green; FAIL when a
+discovered test fails; FAIL, not PASS, when discovery finds nothing to run
+at all -- per G5 in KERNEL_WIRE_TESTS_PASS_CHECK.md, a check that reports
+PASS because nothing was compared is not a check, and unittest's own exit
+code (5, on an empty run) already refuses to call that a success; and
+FAIL, not a hang, when the suite runs past its timeout -- the fix for the
+live, unbounded recursive hang this exact subprocess call caused during
+bundle.py's first test run this session. Each case runs against a
+disposable temp directory, never against this tree's own test_*.py files,
+so the check under test never re-invokes the suite it is itself a member
+of.
 """
 
 from __future__ import annotations
@@ -15,6 +18,7 @@ from __future__ import annotations
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 import tests_pass
 
@@ -51,6 +55,19 @@ class AsCheckTests(unittest.TestCase):
     def test_fail_not_pass_when_nothing_is_discovered(self):
         # Empty directory: no test_*.py files at all.
         self.assertEqual(tests_pass.as_check(self.root)["outcome"], "FAIL")
+
+    def test_fail_not_a_hang_when_the_suite_exceeds_the_timeout(self):
+        self._write("test_slow.py", (
+            "import time\n"
+            "import unittest\n"
+            "class T(unittest.TestCase):\n"
+            "    def test_it(self):\n"
+            "        time.sleep(5)\n"
+        ))
+        with mock.patch.object(tests_pass, "TIMEOUT_SECONDS", 0.1):
+            entry = tests_pass.as_check(self.root)
+        self.assertEqual(entry["outcome"], "FAIL")
+        self.assertIn("did not finish", entry["detail"])
 
 
 if __name__ == "__main__":
