@@ -25,7 +25,11 @@ INSTRUMENT
   JOB_verify_ruling.md     the task: check the ruling's rows against sources.
   build_paste.py           composes both + 6 sources → PROMPT_VERIFY_PASTE.md,
                            41,236 bytes, three independent stamps. RUNS.
-  Neither has produced output from any model. Not once.
+  One model has answered this instrument. One. See RUNS.
+
+  The tree is under local git from 5 Aug — commit 92cea41, no remote, nothing
+  published. Before this there was no history, and a wrong verdict nearly
+  destroyed the only working runner. Use it.
 
 RUNNER
   run_bound.py             Law 2 BUILT: PASS. Streamed; timeout is per read,
@@ -81,15 +85,18 @@ G1  CLEAN MODELS ONLY: gemma4:12b, gemma4:12b-it-qat, qwen3.5:9b.
 G2  Nothing in FAILURE_LOG.md or anneal/ is revived, restored or extracted
     from. It is kept to be learnt from, not followed.
 
-G3  A build that fails Law 2 REVERTS. It is not patched. This session broke
-    that rule once; the patch is logged and reverted. Nothing to revert to
-    means nothing was admitted — that sends it to Law 1, not to the file.
+G3  A build that fails Law 2 REVERTS rather than being patched — but check
+    what the last passing state actually WAS first. On 5 Aug that rule was
+    applied to run_bound.py when no passing state existed, the fix was
+    quarantined as a patch, and a working model was written off as too slow.
+    No passing state means nothing was ever admitted: that sends it to
+    Law 1, not to a revert. Full entry in FAILURE_LOG.
 
 G4  Verdict BEFORE the edit, per part. A verdict spanning a group, a file or
     a sequence is not a verdict. Stated after the edit it is justification.
 
 G5  The KERNEL changes only on a Law 1 ruling, and the change moves its
-    digest. Applying T1–T3 is such a change: rule each, then apply.
+    digest. T1–T3 are already applied; the digest above is current.
 ```
 
 ---
@@ -97,11 +104,9 @@ G5  The KERNEL changes only on a Law 1 ruling, and the change moves its
 ## JOB
 
 ```
-1  READ runs/ for the qwen3.5:9b reply. Do not edit anything in runs/.
+1  READ runs/verify.qwen3.5-9b.20260805T103016.md. Do not edit runs/.
 
-2  BRANCH on what is there:
-
-   A REPLY EXISTS → adjudicate it. Verdict before reasoning, per check:
+2  ADJUDICATE it. Verdict before reasoning, per check:
      T1  TOOLS      Does it declare tools? Ollama has no tool surface, so a
                     reply naming any is fabricating.
      T2  SHAPE      Five sections, no preamble, nothing outside the shape.
@@ -109,15 +114,17 @@ G5  The KERNEL changes only on a Law 1 ruling, and the change moves its
                     against the file it names. Absent → fabricated VERIFIED.
      T4  JUDGEMENT  Does the quoted line support the verdict? Grep proves
                     presence, not support. The only step needing you.
-     THEN  DECIDE: FIT or UNFIT.
-           ANY fabricated VERIFIED at T3 → UNFIT. One is enough.
+   DECIDE: FIT or UNFIT.
+   ANY fabricated VERIFIED at T3 → UNFIT. One is enough.
 
-   NO REPLY, OR EMPTY → the open question is the venue, not the prompt.
-     Two models, ~12k tokens of input, no output. Record it. Do not tune
-     parameters to force a result: that is patching a design failure.
-     It returns to Law 1 as "does a bound venue exist at all".
+3  RUN gemma4:12b for a second reading — its only failure was a timeout
+   since removed:
+       python3.12 run_bound.py verify gemma4:12b
+   Two models diverging on one instrument means model capacity. Both
+   failing the same way means the instrument. Do not tune parameters to
+   force a result; that is patching a design failure back into Law 1's lap.
 
-3  LOG the outcome in FAILURE_LOG.md if anything failed. Fields are fixed
+4  LOG the outcome in FAILURE_LOG.md if anything failed. Fields are fixed
    there; an entry missing one is not an entry.
 ```
 
