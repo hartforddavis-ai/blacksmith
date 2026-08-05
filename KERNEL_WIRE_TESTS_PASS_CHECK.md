@@ -75,11 +75,14 @@ gauge already checks `bundle["runner"]["id"]` against `contract["runner_id"]`
 independently of the `checks` dict (gauge.py lines 105-108), and nothing
 populates `bundle["runner"]` yet. Do not wire it as part of closing
 `tests_pass` — SPEC's own Law 3 (construction) scope is one step, ordered
-on what already passed, not several at once. Note, but do not act on
-without deciding fresh: once all four required checks are wireable, the
-bundle-assembly driver becomes the natural next step — or `runner_id`
-might be cheap to close first, since a `LaunchPlan`'s `runner` dict already
-carries most of what an `id` would need. That is a separate call for the
+on what already passed, not several at once. Note, but do not act on without deciding fresh: once all four required
+checks are wireable, the bundle-assembly driver becomes the natural next
+step. Do not assume `runner_id` is cheap to close by reusing
+`LaunchPlan.runner` (`launch.inspect_runner()`'s output) — that is the
+CLI-executable sense of "runner", which SESSION 5 ruled `runner_id` does
+NOT mean; `bundle["runner"]["id"]` needs a value in the Blacksmith-pipeline
+sense instead (see `KERNEL_REDESIGN_SESSION.md` SESSION 5), and where that
+value comes from is still undecided. That is a separate call for the
 session that reaches it.
 
 ## NOT YOURS
