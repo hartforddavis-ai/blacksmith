@@ -1,5 +1,13 @@
 # BOUND CONTEXT — NEXT SESSION
 
+## OUTSTANDING
+
+Still standing, unread by anyone: `runs/verify.qwen3.5-9b.20260805T103016.md`.
+Whether this whole instrument works is not yet known — one model answered it,
+and nobody has looked at what it said.
+
+---
+
 Paste as the first message. Nothing else carries over.
 
 ## VENUE
@@ -46,7 +54,7 @@ RUNS
   qwen3.5:9b   run 1  COMPLETE. runs/verify.qwen3.5-9b.20260805T103016.md
                       first token 119s · total ~39 min · 8,936 chars.
                       Produced under KERNEL 73a44a07e235, the pre-T1/T2
-                      instrument. Nobody has read it. That is your job.
+                      instrument. See OUTSTANDING at the top.
 
 UNDER RULING
   BLACKSMITH_REDESIGN.md   34 design rows, 15 removals. Produced by an
