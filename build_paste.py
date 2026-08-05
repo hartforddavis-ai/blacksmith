@@ -24,15 +24,24 @@ LAW_FILES = [
     ("LAW 3", LAWS / "Claudes law 3.md"),
 ]
 
+# Both jobs rule the same ruling against the same material; only the task
+# over it differs. Split this if they ever diverge.
+SOURCES = LAW_FILES + [
+    ("SPEC", BS / "SPEC.md"),
+    ("ASSUMPTIONS", BS / "ASSUMPTIONS.md"),
+    ("RULING", RULING),
+]
+
 JOBS = {
     "verify": {
         "job": BS / "JOB_verify_ruling.md",
-        "sources": LAW_FILES + [
-            ("SPEC", BS / "SPEC.md"),
-            ("ASSUMPTIONS", BS / "ASSUMPTIONS.md"),
-            ("RULING", RULING),
-        ],
+        "sources": SOURCES,
         "out": BS / "PROMPT_VERIFY_PASTE.md",
+    },
+    "evaluate": {
+        "job": BS / "JOB_evaluate_redesign.md",
+        "sources": SOURCES,
+        "out": BS / "PROMPT_EVALUATE_PASTE.md",
     },
 }
 

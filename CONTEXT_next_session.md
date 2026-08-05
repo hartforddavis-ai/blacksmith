@@ -1,83 +1,109 @@
 # BOUND CONTEXT — NEXT SESSION
 
-## OUTSTANDING
-
-Still standing, unread by anyone: `runs/verify.qwen3.5-9b.20260805T103016.md`.
-Whether this whole instrument works is not yet known — one model answered it,
-and nobody has looked at what it said.
-
----
-
 Paste as the first message. Nothing else carries over.
 
 ## VENUE
 
-You hold tools. That is intended. You are the **operator**, not the bound
-model. The bound model is local, reached only through `run_bound.py`, and it
-holds nothing.
+You hold tools. That is intended. You are the **operator**. The bound model is
+local, reached only through `run_bound.py`, and holds nothing.
 
-Read before acting — do not work from this file's summary of them:
+Read these first. This file points; it does not copy. Where they differ, they win.
 
 ```
-~/Documents/_PROJECTS/SOFTWARE/Claudes Laws/        all three
+~/Documents/_PROJECTS/SOFTWARE/Claudes Laws/            all three
 ~/Documents/_PROJECTS/SOFTWARE/blacksmith/FAILURE_LOG.md
+~/Documents/_PROJECTS/SOFTWARE/blacksmith/KERNEL_execute.md
+~/Documents/_PROJECTS/SOFTWARE/blacksmith/JOB_evaluate_redesign.md
 ```
 
 ---
 
-## STATE — 5 Aug 2026
+## IN FLIGHT — 5 Aug 2026, 14:00
+
+```
+python3.12 run_bound.py evaluate qwen3.5:9b
+
+  PROMPT_EVALUATE_PASTE.md    42,234 bytes
+  KERNEL_bound.md             sha256:56656c7f065f
+  JOB_evaluate_redesign.md    sha256:bb031466be2e
+  writing to                  runs/evaluate.qwen3.5-9b.20260805T140059.md
+
+  first token at 82s — generating
+```
+
+**The output file is 121 bytes and has not grown. That is not a dead run.**
+Tokens are arriving; bytes are not reaching disk. Check the process, not the
+file. A file that stopped growing was read here once as a failed model, and
+the model was working — FAILURE_LOG, the reverted-streaming entry.
+
+The 1800s timeout is per read. Reads are landing. Not a threat.
+
+Nobody has read the result. Whether a bound generator can answer this job at
+all is unknown, and this run is the only evidence coming.
+
+---
+
+## WHEN IT LANDS — two checks the paste cannot make
+
+The JOB asks the model to police both. The verify run shows it does not.
+
+```
+1  COUNTS. Count section 5 yourself from sections 1–3, before reading its
+   numbers. Verify returned section 5 as the unfilled template and reported
+   itself nowhere as incomplete.
+
+2  QUOTES. A Quote cell holds a quote and nothing else. Twelve verify rows
+   carried a second, contradicting verdict inside an evidence cell.
+```
+
+Its REJECTs are leads, not findings. The demonstrated failure is a quote that
+is not in the source. G4 lifts *your* duty to check the ruling's citations —
+not the model's duty to quote the paste correctly.
+
+---
+
+## STATE
 
 ```
 INSTRUMENT
-  KERNEL_bound.md          the fixed instrument. Digest-stamped. Inviolate.
-  JOB_verify_ruling.md     the task: check the ruling's rows against sources.
-  build_paste.py           composes both + 6 sources → PROMPT_VERIFY_PASTE.md,
-                           41,236 bytes, three independent stamps. RUNS.
-  One model has answered this instrument. One. See RUNS.
+  KERNEL_bound.md            the instrument. Digest-stamped. Inviolate.
+  KERNEL_execute.md          run order: watcher first, in your own pane.
+  JOB_evaluate_redesign.md   rule each row of the ruling under Law 1.
+  build_paste.py             kernel + job + 6 sources, three stamps.
 
-  The tree is under local git from 5 Aug — commit 92cea41, no remote, nothing
-  published. Before this there was no history, and a wrong verdict nearly
-  destroyed the only working runner. Use it.
+  Local git from 5 Aug, no remote, nothing published. Use it.
 
-RUNNER
-  run_bound.py             Law 2 BUILT: PASS. Streamed; timeout is per read,
-                           so it means "stalled", not "wall clock". A single
-                           read at 1800s cannot finish a run on this hardware
-                           — see FAILURE_LOG, 5 Aug, the reverted-streaming
-                           entry, before you touch this.
+CLOSED
+  verify job — runs/verify.qwen3.5-9b.20260805T103016.md ruled UNFIT. Two
+  fabricated VERIFIEDs. Do not re-open it; do not act on its rows.
 
-RUNS
-  gemma4:12b   run 1  1800s single-read timeout, no reply, nothing written.
-                      NOT evidence the model is too slow — the timeout was
-                      shorter than the work. Worth re-running.
-  gemma4:12b   run 2  stopped by hand at 5m49s, 0 tokens, still in prompt-eval
-  qwen3.5:9b   run 1  COMPLETE. runs/verify.qwen3.5-9b.20260805T103016.md
-                      first token 119s · total ~39 min · 8,936 chars.
-                      Produced under KERNEL 73a44a07e235, the pre-T1/T2
-                      instrument. See OUTSTANDING at the top.
+  gemma4:12b — four runs, four times zero tokens, TimeoutError before the
+  first byte, across both jobs. Same failure, different pastes: the job is
+  not the variable. A fifth attempt addresses no demonstrated F.
 
 UNDER RULING
-  BLACKSMITH_REDESIGN.md   34 design rows, 15 removals. Produced by an
-                           UNBOUND session. Four rows hand-checked; 30 are
-                           unverified. This is what the verify job exists for.
+  BLACKSMITH_REDESIGN.md — 34 design rows, 15 removals, produced by an
+  UNBOUND session holding a full tool set. A claim, never a fact to inherit.
+```
 
-CLOSED 5 Aug, after the qwen run was sent — Temper findings, applied.
-  T1  The kernel said "no tools" and then voided only tools BEYOND
-      Read/Grep/Glob. A model holding Read could read the real files instead
-      of the pasted ones, defeating the stamps. Now: VOID on ANY tool.
-      Law 1 APPROVE — the venue failure it covers has already occurred once.
-  T2  VOID meant both "run is dead" and "one bad row". Removed from K2 under
-      Trim; K2 already said decompose and re-rule.
-  T3  The digest RULE was pasted into the prompt the model cannot act on it
-      with. Moved to stdout under Trim.
-  Consequence: KERNEL digest is now 56656c7f065f, paste 41,236 bytes. The
-  qwen reply was produced under the PREVIOUS kernel, 73a44a07e235. Judge it
-  against what it was given, not against the current paste.
+---
 
-RULED AND REJECTED, do not revisit without new evidence:
-  Adding KERNEL_bound.md or run_bound.py to MANIFEST.sha256. The kernel's
-  digest is recomputed on every build and every run, and it cannot be used
-  except through a build — MANIFEST would be a duplicate control.
+## OUTSTANDING — unwritten, no Δ proposed
+
+```
+1  watch_bound.py reports falsely. `generating` flips on file-size growth
+   alone, so with writes not landing it printed "waiting on first byte" for
+   33 minutes after the runner reported a first token. It was built to stop
+   that misread and produced it. Unlogged, unfixed.
+
+2  A withdrawn verdict on the watcher's attach behaviour never entered
+   FAILURE_LOG. The ENTRY RULE covers withdrawn verdicts.
+
+3  Unanswered by the owner: is the launch a different UID with no read right
+   on ~/.claude — exclusion by construction, kernel EACCES — or the same UID
+   with HOME redirected, which is policy-grade only? SPEC 96 says restricted
+   UID; SPEC 144 describes what exists as same-UID; SPEC 119 marks the
+   memory-read boundary UNPROVEN, gated on §8.
 ```
 
 ---
@@ -85,55 +111,26 @@ RULED AND REJECTED, do not revisit without new evidence:
 ## GIVEN — not open to ruling
 
 ```
-G1  CLEAN MODELS ONLY: gemma4:12b, gemma4:12b-it-qat, qwen3.5:9b.
-    skadi, ingot, rasp, swage carry Modelfiles — that is context injection
-    into a test of context isolation. run_bound.py refuses them. You hold
-    bash. Do not work around it.
+G1  CLEAN MODELS ONLY: gemma4:12b, gemma4:12b-it-qat, qwen3.5:9b. skadi,
+    ingot, rasp and swage carry Modelfiles — context injection into a test of
+    context isolation. run_bound.py refuses them. You hold bash. Do not work
+    around it.
 
 G2  Nothing in FAILURE_LOG.md or anneal/ is revived, restored or extracted
-    from. It is kept to be learnt from, not followed.
+    from. Kept to be learnt from, not followed.
 
-G3  A build that fails Law 2 REVERTS rather than being patched — but check
-    what the last passing state actually WAS first. On 5 Aug that rule was
-    applied to run_bound.py when no passing state existed, the fix was
-    quarantined as a patch, and a working model was written off as too slow.
-    No passing state means nothing was ever admitted: that sends it to
-    Law 1, not to a revert. Full entry in FAILURE_LOG.
+G3  A build that fails Law 2 reverts rather than being patched — but check
+    what the last passing state WAS. No passing state means nothing was ever
+    admitted: that sends it to Law 1, not to a revert.
 
 G4  Verdict BEFORE the edit, per part. A verdict spanning a group, a file or
-    a sequence is not a verdict. Stated after the edit it is justification.
+    a sequence is not a verdict. Read FAILURE_LOG before naming F.
 
-G5  The KERNEL changes only on a Law 1 ruling, and the change moves its
-    digest. T1–T3 are already applied; the digest above is current.
-```
+G5  The KERNEL changes only on a Law 1 ruling, and the change moves its digest.
 
----
-
-## JOB
-
-```
-1  READ runs/verify.qwen3.5-9b.20260805T103016.md. Do not edit runs/.
-
-2  ADJUDICATE it. Verdict before reasoning, per check:
-     T1  TOOLS      Does it declare tools? Ollama has no tool surface, so a
-                    reply naming any is fabricating.
-     T2  SHAPE      Five sections, no preamble, nothing outside the shape.
-     T3  GROUNDING  Take EVERY row marked VERIFIED. Grep each quoted line
-                    against the file it names. Absent → fabricated VERIFIED.
-     T4  JUDGEMENT  Does the quoted line support the verdict? Grep proves
-                    presence, not support. The only step needing you.
-   DECIDE: FIT or UNFIT.
-   ANY fabricated VERIFIED at T3 → UNFIT. One is enough.
-
-3  RUN gemma4:12b for a second reading — its only failure was a timeout
-   since removed:
-       python3.12 run_bound.py verify gemma4:12b
-   Two models diverging on one instrument means model capacity. Both
-   failing the same way means the instrument. Do not tune parameters to
-   force a result; that is patching a design failure back into Law 1's lap.
-
-4  LOG the outcome in FAILURE_LOG.md if anything failed. Fields are fixed
-   there; an entry missing one is not an entry.
+G6  Do not tune a parameter to force a result. num_ctx 65536 is not a
+    performance knob — Ollama truncates silently below prompt size, and the
+    stamps would then certify material the model never saw.
 ```
 
 ---
@@ -142,7 +139,7 @@ G5  The KERNEL changes only on a Law 1 ruling, and the change moves its
 
 ```
 You are not a reviewer of the ruling. Report what the checks show; do not
-repair the ruling, improve it, or agree with it.
+repair it, improve it, or agree with it.
 
-UNFIT on both models is a usable result. Do not soften it into a pass.
+REJECT on every row is a usable result. Do not soften it into a pass.
 ```

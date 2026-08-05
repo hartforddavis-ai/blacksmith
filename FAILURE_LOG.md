@@ -5,6 +5,25 @@ Nothing here is a design. Nothing here is to be followed.
 
 ---
 
+## READ RULE
+
+```
+READ this file WHEN:
+    a Law 1 verdict is about to be formed — BEFORE F is named.
+    Not after Δ is formed. Read after, it justifies. Read before, it filters.
+
+IT DECIDES two things, in this order:
+    1  IS F DEMONSTRATED   F is what occurred. Absent here, and absent from a
+                           reproduction on demand, F is theoretical → REJECT.
+    2  IS Δ ALREADY DEAD   an entry naming this Δ is a REJECT at step 1.
+                           Do not run a dead Δ through the four passes.
+
+LIMIT — this rule binds the reader who opens the file. It cannot reach the
+one who does not.
+```
+
+---
+
 ## ENTRY RULE
 
 ```
@@ -133,4 +152,143 @@ LESSON     "Revert, do not patch" assumes a last passing state exists. Here
            the first real attempt, not a repair of a failed one.
            Cost of the wrong call: gemma4:12b was written off as too slow at
            30 minutes when the timeout, not the model, was the limit.
+```
+
+---
+
+## 5 Aug 2026 — `runs/verify.qwen3.5-9b.20260805T103016.md`
+
+```
+BUILT      the only completed reading of the verify instrument. 37 rows,
+           KERNEL 73a44a07e235.
+BY         qwen3.5:9b, BOUND. Declared no tools; true, Ollama has none.
+KILLED BY  Law 2 MATCHED — section 5 returned as the unfilled template,
+           "VERIFIED n · MISQUOTED n · UNSUPPORTED n · MISSED n". Twelve
+           rows carry a second, contradicting verdict inside the Evidence
+           cell, against K2.
+           Law 2 SHOWN — 14 rows VERIFIED, two ungrounded. "Step 0 is the
+           one open step" cites SPEC §9 for the word OPEN; §9 has no status
+           column and no OPEN. "Any fifth generator → verifier" is VERIFIED
+           with no quote, on a paraphrase of the ruling.
+CLAUSE     Assertion · Excess
+STATUS     UNFIT. One fabricated VERIFIED is enough; there are two. Kept as
+           the record of what the instrument produced. Its rows are not
+           findings and nothing in it is to be acted on.
+LESSON     The instrument asks a model with no file access to certify quotes
+           against files it cannot open. Grep found both fabrications in
+           minutes; the bound model could not have. The check lives with the
+           operator, not in the paste.
+           Nothing in the reply self-reports as incomplete. The counts line
+           that would have exposed it was left as template.
+```
+
+---
+
+## 5 Aug 2026 — gemma4:12b run 3
+
+```
+BUILT      the second reading the JOB requires.
+           run_bound.py verify gemma4:12b, 40,878 chars, temperature 0.
+BY         gemma4:12b, BOUND, run by the operator
+KILLED BY  Law 2 SHOWN. TimeoutError at urlopen(req, timeout=1800) inside
+           getresponse() — died waiting for the first byte, before any token
+           streamed. Third attempt, third time zero tokens.
+CLAUSE     none.
+STATUS     FAILED RUN, no artifact. Raising the timeout is tuning a
+           parameter to force a result, which the JOB forbids. A change here
+           is a Δ under Law 1, not a patch.
+LESSON     "Per read means stalled, not wall clock" holds for every read but
+           the first, and the first is the whole of prompt-eval. A per-read
+           timeout is not a stall detector until one byte has arrived.
+           So the instrument has one reading, not two. Diverging means
+           capacity, both failing the same way means the instrument —
+           neither test is available. The UNFIT above rests on one model.
+```
+
+---
+
+## 5 Aug 2026 — the verdict that would have cut `num_ctx`
+
+A verdict, not a build. Nothing written, nothing run.
+
+```
+BUILT      a proposed one-line change: num_ctx 65536 down to about the
+           prompt's token count, to get gemma4 past prompt-eval. Ruled
+           APPROVE, then withdrawn.
+BY         Opus, operator, at the owner's direction
+KILLED BY  Law 1 ROBUST. num_ctx is not a performance knob. Ollama truncates
+           silently when context is smaller than prompt, and a truncated
+           prompt still carries correct digest stamps — the change would
+           have let the stamps certify material the model never saw.
+           Law 1 LEAN, on arithmetic: qwen used 11k prompt tokens and
+           generated 18,919. 65536 covers both. Sizing to the prompt
+           truncates the output.
+CLAUSE     Assertion — the memory-pressure cause was never measured.
+STATUS     WITHDRAWN before it touched a file. run_bound.py unchanged. The
+           stall is undiagnosed; cutting sources does not fix it either,
+           because Ollama sizes the KV cache from num_ctx, not prompt.
+LESSON     Ask what a parameter holds up before calling it a tune. This one
+           held the paste's integrity, and the instrument's claim rests on
+           that. A probe proved gemma4 generates here — "alive" in 15.5s
+           cold. Twice now this model has been blamed for something else.
+```
+
+---
+
+## 5 Aug 2026 — "step 3 is untestable until the owner rules"
+
+```
+BUILT      a finding that SPEC §9 step 3 cannot run against the real
+           runner: HOME locked 0o555 at step 1, child cannot write its
+           state, require_sterile refuses the spawn. Stub-testable only,
+           and blocked until the owner rules whether ~/.claude counts as
+           contamination.
+BY         provenance not stated; arrived as pasted text. The four turns
+           built on it: Opus, UNBOUND, operator.
+KILLED BY  Law 2 — returns a verdict Law 2 does not have. A step that
+           cannot run fails BUILT. "Untestable pending a ruling" is a
+           third state the filter does not define.
+           Law 3 ORDERED — step 3 waits on a decision step 1 was to have
+           made. Two steps that work only by adjusting each other are one
+           decision split in two. That is the defect.
+           Law 1 step 1 — F never occurred. Step 3 has never been run
+           against the real runner.
+CLAUSE     Assertion · Confabulation · Elaboration
+STATUS     Nothing to keep; it was text. Its mechanism is wrong twice
+           over: require_sterile is a census (cell.py:285), not a write
+           test, and it runs at launch.py:186, before the spawn at :205 —
+           a child failing to write cannot fail a check already passed.
+           Do not revive the "owner must rule" framing.
+LESSON     SPEC 119 already records this hole — UNPROVEN, gated on §8. A
+           documented gap re-presented as a discovery adds nothing and
+           costs a ruling slot. Ask whether a blocker is new before
+           raising it.
+           Four turns went on which ruling was needed, none on whether one
+           was. The Laws closed it without the owner.
+```
+
+---
+
+## 5 Aug 2026 — the redesign rulings
+
+```
+BUILT      Law 1 verdicts on twelve modules, two additions, a four-step
+           design, a build order. Chat only. No file.
+BY         Opus, UNBOUND, full tool set
+KILLED BY  Law 2 SHOWN — approved `store` and `promote` without opening
+           either file.
+           Law 1 ROBUST — ten probes against no demonstrated failure.
+           Seven duplicated the test file lying unopened beside them.
+           Law 3 SCOPE — a build order on a design whose own §4 says
+           "FROZEN: No".
+CLAUSE     Confabulation · Assertion
+           Five counts and citations stated without checking. The last,
+           "nine of the ten duplicated" — seven — was written while
+           confessing the defect.
+STATUS     Read the design. Not the rulings: a verdict citing an unopened
+           file is void.
+LESSON     anneal built what it was not asked to. This ruled on what it
+           had not read. Output is faster than reading, so reading goes.
+           Every defect fell to one file read. None fell to the four
+           passes, which ran on prose the session had just written.
 ```
