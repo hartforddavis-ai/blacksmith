@@ -5,15 +5,6 @@ is dead. Blacksmith is a **pre-boot gatekeeper**.
 
 Sections marked **[SCOTT]** are definitional calls awaiting his ruling.
 
-Section numbers are permanent identifiers — rulings and `FAILURE_LOG.md` cite
-them by number:
-
-```
-ON adding a section   → APPEND. Take the next unused number.
-ON removing a section → mark it dead. DO NOT reuse the number.
-NEVER renumber.
-```
-
 ---
 
 ## 1. Why v1 died
@@ -174,23 +165,13 @@ format was ever specified. Take from it:
 - `evidence.py` — hash-chained append-only ledger → the bundle store
 - `findings.py` — lifecycle discipline, **not** its HMAC as a boundary
 
-## 11. Rulings
+## 11. Open rulings
 
-1. **DECIDED.** The `assay` name collision (§4) — Assay is one algorithm;
-   no rename. Ruled 5 Aug 2026.
-2. **DECIDED.** Precedence `BYPASSED > FAILED > UNKNOWN`. A confirmed
-   failure outranks missing evidence. Only ACTIVE promotes.
-3. **DECIDED.** Evidence into the cell as a copy, not a read-only mount.
-   Ruled 5 Aug 2026, reversed same day: the operating constraint is local
-   execution, and a read-only mount's lifecycle (`hdiutil` image
-   create/attach/detach, cleanup on crash) is real operational complexity
-   against a tampering failure that has not occurred — chmod-based copy
-   has not been demonstrated to be bypassed in this tree. Law 1: no
-   demonstrated F for the larger mechanism. `cell.py` already implements
-   `evidence_mode="copy"`; no construction gap remains here.
-4. **DEFERRED, not open.** Metered spend, if credentials do not survive
-   the UID switch — cannot be ruled before SPEC §8 step 0 runs. Does not
-   block freezing the rest of this document.
+1. **[SCOTT]** The `assay` name collision (§4).
+2. Precedence `BYPASSED > FAILED > UNKNOWN`. A confirmed failure outranks
+   missing evidence. Only ACTIVE promotes.
+3. **[SCOTT]** Evidence into the cell as a copy, or a read-only mount.
+4. **[SCOTT]** Metered spend, if credentials do not survive the UID switch.
 
 ## 12. UNKNOWN, preserved
 
