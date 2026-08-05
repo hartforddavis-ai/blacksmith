@@ -165,3 +165,42 @@ re-derives the Ring 0 tree's hashes and compares them to `MANIFEST.sha256`
 to lean on, same shape as `artifact_hash_matches_manifest` leaning on
 `store.get()`, rather than a new one — named as the likely candidate, not
 pre-decided as the mechanism. Full detail in `KERNEL_WIRE_RUNNER_CHECK.md`.
+
+## SESSION 5 — `runner_integrity_verified` closed, 5 Aug 2026
+
+First resolved which of two things this tree calls "runner" the check
+means: `launch.py`'s spawned CLI executable, or Blacksmith's own Ring 0
+pipeline (`cell, attest, launch, collect, gauge, promote`) that
+`manifest.py` seals. `contract.json`'s `runner_id` value
+(`"blacksmith-gauge-1"`) matches Blacksmith's internal version-string
+convention (`gauge-2`, `attest-1`), not a CLI binary name — read as
+identifying which pipeline build adjudicated the bundle. Ruled the
+latter.
+
+Added `manifest.as_check()`: renders the existing `render()` vs
+`MANIFEST.sha256` comparison into gauge's `CHECK_OUTCOMES`, no second
+hashing path — same shape as `store.as_check`/`attest.as_check`. Takes no
+`root` argument, matching `main()`: `MANIFEST` is a fixed path to the real
+tree's sealed manifest, so an arbitrary root would only ever mismatch it.
+PASS on a current manifest; FAIL on stale; outcome key omitted (UNKNOWN)
+when `MANIFEST.sha256` is absent, per SPEC §4. Three tests, one per
+branch, in a new `AsCheckTests` class in `test_manifest.py` — `HERE` and
+`MANIFEST` patched together via `mock.patch.object` so the fake tree and
+the file being checked against stay in sync.
+
+Carried forward `test_store_as_check.py`'s tamper-locate fix (via
+`store.root.rglob` rather than the private `_path_for`), left uncommitted
+from session 4. MANIFEST.sha256 regenerated — `manifest.py` is itself a
+Ring 0 member, so editing it stales its own seal. Full suite 165/165.
+Commit `4aadb3f`.
+
+No pivot-bundle driver was built — still out of scope (Law 3: one step).
+
+**Next action:** `tests_pass` is the last of the four required checks
+unwired. No existing module re-derives "the suite passed" the way
+`store.get()` and `manifest.render()` re-derive their guarantees — this
+one will likely need to *run* `python3 -m unittest discover`, which is a
+different shape from the last three (I/O of a subprocess, not a hash
+comparison) and needs its own Law 1 pass on what "the suite" means for a
+live bundle (this tree's own tests? the generated artifact's tests, if
+any exist?). Full detail in `KERNEL_WIRE_TESTS_PASS_CHECK.md`.
