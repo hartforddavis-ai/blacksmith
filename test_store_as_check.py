@@ -37,8 +37,11 @@ class AsCheckTests(unittest.TestCase):
         self.assertEqual(entry["outcome"], "FAIL")
 
     def test_fail_when_bytes_are_altered_after_staging(self):
+        # Locate the object via the store's public `root`, not its private
+        # `_path_for` sharding scheme — a reshard shouldn't fail this test
+        # for a reason unrelated to tamper detection.
         object_id = self.store.put_bytes(b"artifact bytes")
-        target = self.store._path_for(object_id)
+        target = next(self.store.root.rglob(object_id))
         target.chmod(0o644)
         target.write_bytes(b"tampered bytes")
 

@@ -14,6 +14,7 @@ import hashlib
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 import manifest
 
@@ -68,6 +69,46 @@ class MembershipTests(unittest.TestCase):
             self.assertEqual(sep, "  ")
             self.assertEqual(len(digest), 64)
             self.assertTrue(name and not name.startswith(" "))
+
+
+class AsCheckTests(unittest.TestCase):
+    """Coverage for as_check -- the runner_integrity_verified mechanism.
+
+    `MANIFEST` is a fixed path (SPEC §4 reasoning: a manifest scoped to an
+    arbitrary root would compare that root against a file describing a
+    different tree, which is not a check). Both `HERE` and `MANIFEST` are
+    patched together so `render()`'s default root and the file `as_check`
+    reads stay pointed at the same fake tree.
+    """
+
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.root = Path(self._tmp.name)
+        (self.root / "cell.py").write_text("c", encoding="utf-8")
+        self._patches = [
+            mock.patch.object(manifest, "HERE", self.root),
+            mock.patch.object(manifest, "MANIFEST", self.root / "MANIFEST.sha256"),
+        ]
+        for p in self._patches:
+            p.start()
+
+    def tearDown(self):
+        for p in self._patches:
+            p.stop()
+        self._tmp.cleanup()
+
+    def test_pass_when_manifest_matches_the_tree(self):
+        manifest.MANIFEST.write_text(manifest.render(), encoding="utf-8")
+        self.assertEqual(manifest.as_check()["outcome"], "PASS")
+
+    def test_fail_when_manifest_is_stale(self):
+        manifest.MANIFEST.write_text(manifest.render(), encoding="utf-8")
+        (self.root / "cell.py").write_text("tampered", encoding="utf-8")
+        self.assertEqual(manifest.as_check()["outcome"], "FAIL")
+
+    def test_unknown_omits_the_outcome_key_when_manifest_is_absent(self):
+        entry = manifest.as_check()
+        self.assertNotIn("outcome", entry)
 
 
 class LiveTreeTests(unittest.TestCase):
