@@ -139,3 +139,29 @@ MANIFEST.sha256 regenerated (17 files, current). Full suite 158/158.
 `artifact_hash_matches_manifest` is the cheapest to make honestly true
 against what a run just staged — so a future run moves off UNKNOWN with
 real evidence instead of more absence.
+
+## SESSION 4 — first real check wired, 5 Aug 2026
+
+`artifact_hash_matches_manifest` closed. Added `store.as_check(store,
+object_id)`: renders `get()`'s existing re-hash-on-read into gauge's
+CHECK_OUTCOMES rather than hashing a second time — the same shape as
+`attest.as_check`, so the tree now has two I/O modules each rendering their
+own guarantee into gauge's vocabulary instead of gauge doing any I/O itself.
+PASS on an intact staged artifact; FAIL on missing, tampered-after-staging,
+or malformed ids. No UNKNOWN branch — a store lookup only ever succeeds or
+raises, so none was manufactured. Four tests, each tied to a named failure
+(SPEC's adversarial-harness row 159 names "tampered manifest" and
+"missing-evidence-as-pass" directly). MANIFEST.sha256 regenerated. Full
+suite 162/162. Commit `c6fc723`.
+
+No pivot-bundle driver was built — nothing in this tree yet assembles
+`bundle["checks"]` for a live pivot run; `pivot_smoke....md` was hand-run.
+`store.as_check` is ready for that driver whenever it's built; building the
+driver itself was out of scope for this pass (Law 3: one step).
+
+**Next action:** `runner_integrity_verified` — `manifest.py` already
+re-derives the Ring 0 tree's hashes and compares them to `MANIFEST.sha256`
+(the `--check` flag does exactly this today). That's a re-derivation path
+to lean on, same shape as `artifact_hash_matches_manifest` leaning on
+`store.get()`, rather than a new one — named as the likely candidate, not
+pre-decided as the mechanism. Full detail in `KERNEL_WIRE_RUNNER_CHECK.md`.
