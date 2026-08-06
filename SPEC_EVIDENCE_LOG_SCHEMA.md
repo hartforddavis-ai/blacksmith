@@ -41,7 +41,9 @@ Define evidence log schema as the formal proof chain that joins:
 ## Proof Chain
 1. Launch-record proves session started (timestamp, who, what job)
 2. Execution proves session ran (tokens arrived, exit status)
-3. Integrity-report proves output wasn't tampered (pre/post hashes)
+3. Integrity-report proves output wasn't tampered — the delta line is the
+   evidence. The two hashes identify the measurements it compared; they are
+   never equal to each other, because each covers its own phase name.
 4. Verdict proves adjudication (ACTIVE/FAILED/UNKNOWN/BYPASSED)
 5. **All four together = proof that session ran and output is credible**
 

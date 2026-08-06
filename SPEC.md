@@ -74,7 +74,10 @@ All parent-side except the cell's occupant.
 - **`attest`** — hashes cell, contract, runner, and evidence before launch;
   re-hashes after. Freezes a manifest. A missing manifest reports integrity
   UNKNOWN and is never filled in later.
-- **`launch`** — spawns the child as the restricted UID.
+- **`launch`** — spawns the child as the restricted UID. **STALE — closed by
+  the 6 Aug local pivot.** Generator is a local Ollama model or bounded Claude
+  chat by paste; no cloud CLI child is spawned. `launch.py` remains on disk,
+  disposition undecided (TODO !57).
 - **`collect`** — **DEAD, ruled §11.5.** Replaced by `log`, below.
 - **`log`** — append-only evidence log, parent-side. Each stage records its own
   decision at the moment it decides, so there is no separate gathering step and
@@ -91,9 +94,10 @@ All parent-side except the cell's occupant.
 1  RAMP         trigger; fail closed
 2  CELL BUILD   sterile tree, own HOME, evidence read-only
 3  PRE-ATTEST   hash cell + contract + runner + evidence; freeze manifest
-4  LAUNCH       restricted UID, cwd=HOME=cell, --safe-mode,
-                --tools "Read,Grep,Glob", --append-system-prompt-file,
-                --output-format stream-json
+4  LAUNCH       [STALE — restricted-UID CLI spawn, closed by the 6 Aug local
+                pivot; cwd=HOME=cell, --safe-mode, --tools "Read,Grep,Glob",
+                --append-system-prompt-file, --output-format stream-json
+                describe the retired cloud-CLI path, not the local one]
 5  GENERATE     child emits artifact + transcript
                 child's claims about its own isolation are DISCARDED
 6  POST-ATTEST  re-hash cell; ANY delta = write capability = BYPASSED

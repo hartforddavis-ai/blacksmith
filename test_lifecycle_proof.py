@@ -260,6 +260,18 @@ print('WROTE AND REVERTED')
         # The fix belongs to whatever assembles the bundle gauge adjudicates.
         # `collect`, previously named as its owner, was ruled dead 6 Aug
         # (SPEC §11.5); that ruling moved this defect, it did not close it.
+        #
+        # Why the child never runs, pinned rather than left implicit (TODO
+        # !42): `sys.executable` is a plain interpreter, not a runner that
+        # consumes SPEC §5 step 4's flags. It rejects the leading
+        # `--safe-mode` as an unrecognized option and exits before importing
+        # the payload — a CPython argv-parsing artifact, not a property of
+        # `launch`/`attest`/`gauge`. The child would fail identically with
+        # every one of those flags absent, so the assertion below is the
+        # actual mechanism under test, not just its symptom: without it, a
+        # future change that makes the interpreter accept `--safe-mode`
+        # would make the child run, fail this test, and report a regression
+        # in something it never tested.
         built = self.build()
         script = self.tmp / "payload.py"
         script.write_text("print('never reached')\n", encoding="utf-8")
@@ -273,6 +285,12 @@ print('WROTE AND REVERTED')
 
         self.assertNotEqual(record["exit_code"], 0)
         self.assertNotIn("never reached", record["stdout"])
+        # Substring, not the full CPython error phrase: this tree already
+        # lost once this week to pinning a test on one Python version's exact
+        # wording (`tests_pass.as_check`'s `unittest discover` exit-code
+        # assumption, 3.9 vs 3.12). The flag name itself is what ties this to
+        # the real mechanism; the rest of the sentence is CPython's to change.
+        self.assertIn("--safe-mode", record["stderr"])
         self.assertEqual(report["integrity"], attest.INTACT)
         self.assertEqual(attest.as_check(report)["outcome"], "PASS")
 

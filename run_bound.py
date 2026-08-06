@@ -48,6 +48,10 @@ def main(job, model):
             "model": model,
             "prompt": prompt,
             "stream": True,
+            # These models reason before replying whether asked or not (59 tokens
+            # to emit "OK"). Unasked, that stream is discarded and a working run
+            # writes nothing — which is what got gemma4 killed by hand three times.
+            "think": True,
             "options": {"temperature": 0, "num_ctx": 65536},
         }).encode(),
         headers={"Content-Type": "application/json"},
@@ -57,8 +61,19 @@ def main(job, model):
     stamp = datetime.datetime.now().strftime("%Y%m%dT%H%M%S")
     dest = OUT / f"{job}.{model.replace(':', '-')}.{stamp}.md"
     print(f"{model}: sending {len(prompt):,} chars, temperature 0 …", flush=True)
+    # This goes quiet for minutes while the model reasons. Say so here, with the
+    # command — the watcher existing was not enough to stop a working run being
+    # killed by hand on 5 Aug (FAILURE_LOG.md).
+    print(f"this stays silent while the model reasons. To watch it, in another pane:\n"
+          f"    python3.12 watch_bound.py {job} {model}", flush=True)
 
-    start, first, chars, final = time.monotonic(), None, 0, {}
+    # Reasoning goes to its own file, never into the reply. The reply is what
+    # gets adjudicated and what quotes.py scans; mixing the two would hand a
+    # checker the model's self-persuasion as if it were the answer.
+    think_path = dest.parent / (dest.stem + ".thinking.md")
+    think_out = None
+
+    start, first, chars, thought_chars, final = time.monotonic(), None, 0, 0, {}
     with dest.open("w") as out:
         out.write(
             f"# {job} · {model} · {stamp}\n\n"
@@ -76,6 +91,17 @@ def main(job, model):
                     if first is None:
                         first = time.monotonic() - start
                         print(f"first token at {first:,.0f}s — prompt-eval done", flush=True)
+                    thought = chunk.get("thinking") or ""
+                    if thought:
+                        if think_out is None:
+                            think_out = think_path.open("w")
+                            think_out.write(
+                                f"# {job} · {model} · {stamp} — model reasoning\n\n"
+                                "NOT the reply. Recorded so a silent run is visibly\n"
+                                "working, and so a bad reply can be diagnosed.\n\n---\n\n")
+                        think_out.write(thought)
+                        think_out.flush()
+                        thought_chars += len(thought)
                     out.write(chunk.get("response", ""))
                     out.flush()
                     chars += len(chunk.get("response", ""))
@@ -83,11 +109,13 @@ def main(job, model):
                         final = chunk
         except OSError as e:
             elapsed = time.monotonic() - start
+            if think_out is not None:
+                think_out.close()
             out.write(
                 f"\n\n---\n\n"
                 f"STALLED: read failed after {elapsed:,.0f}s "
                 f"(first token: {'never' if first is None else f'{first:,.0f}s'}, "
-                f"{chars:,} chars received)\n"
+                f"{chars:,} reply chars, {thought_chars:,} reasoning chars)\n"
                 f"error: {e!r}\n"
             )
             print(f"STALLED after {elapsed:,.0f}s — wrote partial + verdict to "
@@ -99,8 +127,12 @@ def main(job, model):
             f"{secs(final.get('prompt_eval_duration'))}\n"
             f"generation:  {final.get('eval_count')} tok in "
             f"{secs(final.get('eval_duration'))}\n"
+            f"reasoning:   {thought_chars:,} chars (separate file)\n"
         )
-    print(f"wrote {dest.relative_to(build_paste.BS)}  ({chars:,} chars)")
+    if think_out is not None:
+        think_out.close()
+    print(f"wrote {dest.relative_to(build_paste.BS)}  "
+          f"({chars:,} reply chars, {thought_chars:,} reasoning chars)")
 
 
 if __name__ == "__main__":
