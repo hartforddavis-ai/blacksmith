@@ -1,0 +1,27 @@
+# Foundational Axioms for Trustworthy Computation
+
+## Axiom 1 — Evidence
+
+**No claim is established by assertion alone. A claim requires evidence appropriate to the confidence demanded of it.**
+
+An assertion, regardless of its source, does not establish truth or trust. Claims become eligible for acceptance only through the production of sufficient supporting evidence.
+
+---
+
+## Axiom 2 — Independence
+
+**Evidence has no authority unless it can be independently evaluated.**
+
+Evidence is trustworthy only when its validity can be assessed independently of the entity that produced the claim or the evidence itself. Trust cannot arise from self-validation.
+
+---
+
+### Consequence
+
+These axioms do not prescribe implementation. They define the minimum conditions under which a computational claim may become trustworthy. Any trustworthy computational system must therefore provide:
+
+* Evidence sufficient for the claim being made.
+* A means for that evidence to be independently evaluated.
+
+All higher-level laws, protocols, and implementations should be derivable from these axioms.
+
