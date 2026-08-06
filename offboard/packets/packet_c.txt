@@ -1,0 +1,50 @@
+[[MARKER 1]]
+The station records air temperature once every ten minutes.
+Readings are written to a rolling file and rotated at midnight local time.
+[[MARKER 2]]
+A reading that arrives out of order is kept, not discarded, and flagged.
+Wind speed is sampled at one hertz and averaged over the reporting interval.
+[[MARKER 3]]
+The gust value is the highest single sample within that same interval.
+Humidity is measured by a capacitive element mounted inside the screen.
+[[MARKER 4]]
+The screen is a louvred enclosure painted white to limit radiative heating.
+Barometric pressure is corrected to sea level using the station elevation.
+[[MARKER 5]]
+Elevation is surveyed once at installation and stored in the config file.
+[MARKER 9]
+Rainfall is counted by a tipping bucket with a nominal resolution.
+[[MARKER 6]]
+Each tip is timestamped so that intensity can be derived after the fact.
+The bucket is inspected quarterly for debris and for insect nests.
+[[MARKER 7]]
+Solar radiation is reported in watts per square metre over the interval.
+The pyranometer dome is cleaned on the same schedule as the bucket.
+[[MARKER 8]]
+Soil temperature probes sit at three depths below the undisturbed surface.
+Depths are recorded in centimetres and are not adjusted after installation.
+[[MARKER 9]]
+Battery voltage is logged alongside every observation for later diagnosis.
+A voltage below the configured floor raises a maintenance flag in the record.
+[[MARKER 10]]
+[[marker 3]]
+The logger keeps its own clock and disciplines it from a network time source.
+If the time source is unreachable the logger continues on its internal clock.
+[[MARKER 11]]
+Drift accumulated during an outage is reported but never silently corrected.
+Data are transmitted in batches when the link is available and queued when not.
+The queue is bounded and the oldest unsent batch is dropped when it overflows.
+A dropped batch is counted so that gaps in the archive can be explained.
+Quality control runs on receipt and marks values that fail a range check.
+Range checks are seasonal and are held in a table separate from the code.
+A value that fails a check is retained in the archive with its flag attached.
+[[MARKER]]
+Nothing is deleted from the archive once written, only annotated.
+
+---
+
+Some lines above consist only of a tag: two open square brackets, the word MARKER in capitals, a number, then two close square brackets.
+
+Count those lines. Reply with one line and nothing else, in this form, with the number substituted:
+
+COUNT: 42

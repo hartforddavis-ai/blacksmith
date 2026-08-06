@@ -317,3 +317,36 @@ LESSON     A FAILURE_LOG entry recording an action is not the action. The
            quarantine and no such entry existed on disk when checked —
            check the file, not the claim about the file.
 ```
+
+---
+
+## 6 Aug 2026 — the ceiling that would have scaled with packet size
+
+```
+BUILT      a proposal to replace THINKING_CEILING = 400_000 in ramp.py with
+           a bound proportional to the prompt (~20x its chars), after
+           qwen3.5:9b sat 21 minutes and 46,000 reasoning chars on the
+           smallest ramp rung (500 tok, 2,367 chars) with an empty reply.
+BY         Opus, in-session, proposed and recommended before the Filter ran.
+KILLED BY  Law 1 — ROBUST, LEAN and FAST.
+           ROBUST: nothing had failed. The ceiling exists to decide that
+           case and had not fired. The 90-hour run was a projection by the
+           proposer, unchecked by anyone else — theoretical.
+           LEAN: zero change was smaller and was on the list.
+           FAST: 20x is calibrated against nothing, which is the defect it
+           charged the 400,000 with. It reproduced the fault it fixed.
+CLAUSE     none fired.
+STATUS     DEAD. Do not revive on the same evidence. A ceiling change needs
+           the ceiling to have fired first and been shown wrong.
+LESSON     A control proposed off a projection is a control with no F.
+           "This will take too long" is a forecast, not a failure. The
+           instrument that would have produced the evidence was the thing
+           being killed to prevent the forecast.
+
+           Second finding, on the process: this file's READ RULE was
+           broken to produce this entry. F was named and the four passes
+           run before FAILURE_LOG.md was opened. The verdict survived
+           because no entry killed this Δ — that is luck, not compliance.
+           The rule's own LIMIT says it cannot reach the one who does not
+           open the file, and it did not.
+```

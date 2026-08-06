@@ -1,0 +1,413 @@
+[[MARKER 1]]
+The station records air temperature once every ten minutes.
+Readings are written to a rolling file and rotated at midnight local time.
+A reading that arrives out of order is kept, not discarded, and flagged.
+Wind speed is sampled at one hertz and averaged over the reporting interval.
+The gust value is the highest single sample within that same interval.
+Humidity is measured by a capacitive element mounted inside the screen.
+The screen is a louvred enclosure painted white to limit radiative heating.
+Barometric pressure is corrected to sea level using the station elevation.
+Elevation is surveyed once at installation and stored in the config file.
+Rainfall is counted by a tipping bucket with a nominal resolution.
+Each tip is timestamped so that intensity can be derived after the fact.
+The bucket is inspected quarterly for debris and for insect nests.
+Solar radiation is reported in watts per square metre over the interval.
+The pyranometer dome is cleaned on the same schedule as the bucket.
+Soil temperature probes sit at three depths below the undisturbed surface.
+Depths are recorded in centimetres and are not adjusted after installation.
+Battery voltage is logged alongside every observation for later diagnosis.
+A voltage below the configured floor raises a maintenance flag in the record.
+The logger keeps its own clock and disciplines it from a network time source.
+If the time source is unreachable the logger continues on its internal clock.
+Drift accumulated during an outage is reported but never silently corrected.
+Data are transmitted in batches when the link is available and queued when not.
+The queue is bounded and the oldest unsent batch is dropped when it overflows.
+A dropped batch is counted so that gaps in the archive can be explained.
+Quality control runs on receipt and marks values that fail a range check.
+Range checks are seasonal and are held in a table separate from the code.
+A value that fails a check is retained in the archive with its flag attached.
+Nothing is deleted from the archive once written, only annotated.
+Monthly summaries are computed from flagged data with the flags respected.
+The summary states how many observations were excluded and on what grounds.
+Station metadata changes are versioned with the date the change took effect.
+A sensor swap is a metadata change and is recorded as one.
+Calibration certificates are stored with the metadata and never in the archive.
+The archive is copied nightly to a second site on separate power.
+Restores are exercised twice a year against the second site, not the first.
+An exercise that is not observed by a second person is not counted.
+Retention is indefinite for observations and five years for diagnostics.
+Diagnostics include voltage, clock discipline, and link availability.
+The distinction matters because diagnostics are large and observations are not.
+Access to the archive is read-only except through the ingest path.
+The ingest path is the only writer and it is single-threaded by design.
+Concurrency was tried once and produced interleaved records under load.
+The single writer has held for eleven years without an ordering fault.
+Reports are generated from the archive and never from the live logger.
+A report that disagrees with the archive is a fault in the report.
+Observation 00001: air 8.1 C, wind 0.1 m/s, pressure 995.1 hPa, battery 11.5 V.
+Observation 00002: air 8.2 C, wind 0.2 m/s, pressure 995.2 hPa, battery 11.6 V.
+Observation 00003: air 8.3 C, wind 0.3 m/s, pressure 995.3 hPa, battery 11.7 V.
+Observation 00004: air 8.4 C, wind 0.4 m/s, pressure 995.4 hPa, battery 11.8 V.
+[[MARKER 2]]
+Observation 00005: air 8.5 C, wind 0.5 m/s, pressure 995.5 hPa, battery 11.9 V.
+Observation 00006: air 8.6 C, wind 0.6 m/s, pressure 995.6 hPa, battery 12.0 V.
+Observation 00007: air 8.7 C, wind 0.7 m/s, pressure 995.7 hPa, battery 12.1 V.
+Observation 00008: air 8.8 C, wind 0.8 m/s, pressure 995.8 hPa, battery 12.2 V.
+Observation 00009: air 8.9 C, wind 0.9 m/s, pressure 995.9 hPa, battery 12.3 V.
+Observation 00010: air 9.0 C, wind 1.0 m/s, pressure 996.0 hPa, battery 12.4 V.
+Observation 00011: air 9.1 C, wind 1.1 m/s, pressure 996.1 hPa, battery 12.5 V.
+Observation 00012: air 9.2 C, wind 1.2 m/s, pressure 996.2 hPa, battery 12.6 V.
+Observation 00013: air 9.3 C, wind 1.3 m/s, pressure 996.3 hPa, battery 12.7 V.
+Observation 00014: air 9.4 C, wind 1.4 m/s, pressure 996.4 hPa, battery 12.8 V.
+Observation 00015: air 9.5 C, wind 1.5 m/s, pressure 996.5 hPa, battery 12.9 V.
+Observation 00016: air 9.6 C, wind 1.6 m/s, pressure 996.6 hPa, battery 13.0 V.
+Observation 00017: air 9.7 C, wind 1.7 m/s, pressure 996.7 hPa, battery 13.1 V.
+Observation 00018: air 9.8 C, wind 1.8 m/s, pressure 996.8 hPa, battery 13.2 V.
+Observation 00019: air 9.9 C, wind 1.9 m/s, pressure 996.9 hPa, battery 13.3 V.
+Observation 00020: air 10.0 C, wind 2.0 m/s, pressure 997.0 hPa, battery 13.4 V.
+Observation 00021: air 10.1 C, wind 2.1 m/s, pressure 997.1 hPa, battery 13.5 V.
+Observation 00022: air 10.2 C, wind 2.2 m/s, pressure 997.2 hPa, battery 13.6 V.
+Observation 00023: air 10.3 C, wind 2.3 m/s, pressure 997.3 hPa, battery 13.7 V.
+Observation 00024: air 10.4 C, wind 2.4 m/s, pressure 997.4 hPa, battery 13.8 V.
+Observation 00025: air 10.5 C, wind 2.5 m/s, pressure 997.5 hPa, battery 13.9 V.
+Observation 00026: air 10.6 C, wind 2.6 m/s, pressure 997.6 hPa, battery 11.4 V.
+Observation 00027: air 10.7 C, wind 2.7 m/s, pressure 997.7 hPa, battery 11.5 V.
+Observation 00028: air 10.8 C, wind 2.8 m/s, pressure 997.8 hPa, battery 11.6 V.
+Observation 00029: air 10.9 C, wind 2.9 m/s, pressure 997.9 hPa, battery 11.7 V.
+Observation 00030: air 11.0 C, wind 3.0 m/s, pressure 998.0 hPa, battery 11.8 V.
+Observation 00031: air 11.1 C, wind 3.1 m/s, pressure 998.1 hPa, battery 11.9 V.
+Observation 00032: air 11.2 C, wind 3.2 m/s, pressure 998.2 hPa, battery 12.0 V.
+Observation 00033: air 11.3 C, wind 3.3 m/s, pressure 998.3 hPa, battery 12.1 V.
+Observation 00034: air 11.4 C, wind 3.4 m/s, pressure 998.4 hPa, battery 12.2 V.
+Observation 00035: air 11.5 C, wind 3.5 m/s, pressure 998.5 hPa, battery 12.3 V.
+Observation 00036: air 11.6 C, wind 3.6 m/s, pressure 998.6 hPa, battery 12.4 V.
+Observation 00037: air 11.7 C, wind 3.7 m/s, pressure 998.7 hPa, battery 12.5 V.
+Observation 00038: air 11.8 C, wind 3.8 m/s, pressure 998.8 hPa, battery 12.6 V.
+Observation 00039: air 11.9 C, wind 3.9 m/s, pressure 998.9 hPa, battery 12.7 V.
+Observation 00040: air 12.0 C, wind 4.0 m/s, pressure 999.0 hPa, battery 12.8 V.
+Observation 00041: air 12.1 C, wind 4.1 m/s, pressure 999.1 hPa, battery 12.9 V.
+Observation 00042: air 12.2 C, wind 4.2 m/s, pressure 999.2 hPa, battery 13.0 V.
+Observation 00043: air 12.3 C, wind 4.3 m/s, pressure 999.3 hPa, battery 13.1 V.
+Observation 00044: air 12.4 C, wind 4.4 m/s, pressure 999.4 hPa, battery 13.2 V.
+Observation 00045: air 12.5 C, wind 4.5 m/s, pressure 999.5 hPa, battery 13.3 V.
+Observation 00046: air 12.6 C, wind 4.6 m/s, pressure 999.6 hPa, battery 13.4 V.
+Observation 00047: air 12.7 C, wind 4.7 m/s, pressure 999.7 hPa, battery 13.5 V.
+Observation 00048: air 12.8 C, wind 4.8 m/s, pressure 999.8 hPa, battery 13.6 V.
+Observation 00049: air 12.9 C, wind 4.9 m/s, pressure 999.9 hPa, battery 13.7 V.
+Observation 00050: air 13.0 C, wind 5.0 m/s, pressure 1000.0 hPa, battery 13.8 V.
+Observation 00051: air 13.1 C, wind 5.1 m/s, pressure 1000.1 hPa, battery 13.9 V.
+Observation 00052: air 13.2 C, wind 5.2 m/s, pressure 1000.2 hPa, battery 11.4 V.
+Observation 00053: air 13.3 C, wind 5.3 m/s, pressure 1000.3 hPa, battery 11.5 V.
+[[MARKER 3]]
+Observation 00054: air 13.4 C, wind 5.4 m/s, pressure 1000.4 hPa, battery 11.6 V.
+Observation 00055: air 13.5 C, wind 5.5 m/s, pressure 1000.5 hPa, battery 11.7 V.
+Observation 00056: air 13.6 C, wind 5.6 m/s, pressure 1000.6 hPa, battery 11.8 V.
+Observation 00057: air 13.7 C, wind 5.7 m/s, pressure 1000.7 hPa, battery 11.9 V.
+Observation 00058: air 13.8 C, wind 5.8 m/s, pressure 1000.8 hPa, battery 12.0 V.
+Observation 00059: air 13.9 C, wind 5.9 m/s, pressure 1000.9 hPa, battery 12.1 V.
+Observation 00060: air 14.0 C, wind 6.0 m/s, pressure 1001.0 hPa, battery 12.2 V.
+Observation 00061: air 14.1 C, wind 6.1 m/s, pressure 1001.1 hPa, battery 12.3 V.
+Observation 00062: air 14.2 C, wind 6.2 m/s, pressure 1001.2 hPa, battery 12.4 V.
+Observation 00063: air 14.3 C, wind 6.3 m/s, pressure 1001.3 hPa, battery 12.5 V.
+Observation 00064: air 14.4 C, wind 6.4 m/s, pressure 1001.4 hPa, battery 12.6 V.
+Observation 00065: air 14.5 C, wind 6.5 m/s, pressure 1001.5 hPa, battery 12.7 V.
+Observation 00066: air 14.6 C, wind 6.6 m/s, pressure 1001.6 hPa, battery 12.8 V.
+Observation 00067: air 14.7 C, wind 6.7 m/s, pressure 1001.7 hPa, battery 12.9 V.
+Observation 00068: air 14.8 C, wind 6.8 m/s, pressure 1001.8 hPa, battery 13.0 V.
+Observation 00069: air 14.9 C, wind 6.9 m/s, pressure 1001.9 hPa, battery 13.1 V.
+Observation 00070: air 15.0 C, wind 7.0 m/s, pressure 1002.0 hPa, battery 13.2 V.
+Observation 00071: air 15.1 C, wind 7.1 m/s, pressure 1002.1 hPa, battery 13.3 V.
+Observation 00072: air 15.2 C, wind 7.2 m/s, pressure 1002.2 hPa, battery 13.4 V.
+Observation 00073: air 15.3 C, wind 7.3 m/s, pressure 1002.3 hPa, battery 13.5 V.
+Observation 00074: air 15.4 C, wind 7.4 m/s, pressure 1002.4 hPa, battery 13.6 V.
+Observation 00075: air 15.5 C, wind 7.5 m/s, pressure 1002.5 hPa, battery 13.7 V.
+Observation 00076: air 15.6 C, wind 7.6 m/s, pressure 1002.6 hPa, battery 13.8 V.
+Observation 00077: air 15.7 C, wind 7.7 m/s, pressure 1002.7 hPa, battery 13.9 V.
+Observation 00078: air 15.8 C, wind 7.8 m/s, pressure 1002.8 hPa, battery 11.4 V.
+Observation 00079: air 15.9 C, wind 7.9 m/s, pressure 1002.9 hPa, battery 11.5 V.
+Observation 00080: air 16.0 C, wind 8.0 m/s, pressure 1003.0 hPa, battery 11.6 V.
+Observation 00081: air 16.1 C, wind 8.1 m/s, pressure 1003.1 hPa, battery 11.7 V.
+Observation 00082: air 16.2 C, wind 8.2 m/s, pressure 1003.2 hPa, battery 11.8 V.
+Observation 00083: air 16.3 C, wind 8.3 m/s, pressure 1003.3 hPa, battery 11.9 V.
+Observation 00084: air 16.4 C, wind 8.4 m/s, pressure 1003.4 hPa, battery 12.0 V.
+Observation 00085: air 16.5 C, wind 8.5 m/s, pressure 1003.5 hPa, battery 12.1 V.
+Observation 00086: air 16.6 C, wind 8.6 m/s, pressure 1003.6 hPa, battery 12.2 V.
+Observation 00087: air 16.7 C, wind 0.0 m/s, pressure 1003.7 hPa, battery 12.3 V.
+Observation 00088: air 16.8 C, wind 0.1 m/s, pressure 1003.8 hPa, battery 12.4 V.
+Observation 00089: air 16.9 C, wind 0.2 m/s, pressure 1003.9 hPa, battery 12.5 V.
+Observation 00090: air 17.0 C, wind 0.3 m/s, pressure 1004.0 hPa, battery 12.6 V.
+Observation 00091: air 17.1 C, wind 0.4 m/s, pressure 1004.1 hPa, battery 12.7 V.
+Observation 00092: air 17.2 C, wind 0.5 m/s, pressure 1004.2 hPa, battery 12.8 V.
+Observation 00093: air 17.3 C, wind 0.6 m/s, pressure 1004.3 hPa, battery 12.9 V.
+Observation 00094: air 17.4 C, wind 0.7 m/s, pressure 1004.4 hPa, battery 13.0 V.
+Observation 00095: air 17.5 C, wind 0.8 m/s, pressure 1004.5 hPa, battery 13.1 V.
+Observation 00096: air 17.6 C, wind 0.9 m/s, pressure 1004.6 hPa, battery 13.2 V.
+Observation 00097: air 17.7 C, wind 1.0 m/s, pressure 1004.7 hPa, battery 13.3 V.
+Observation 00098: air 17.8 C, wind 1.1 m/s, pressure 1004.8 hPa, battery 13.4 V.
+Observation 00099: air 17.9 C, wind 1.2 m/s, pressure 1004.9 hPa, battery 13.5 V.
+Observation 00100: air 18.0 C, wind 1.3 m/s, pressure 1005.0 hPa, battery 13.6 V.
+Observation 00101: air 18.1 C, wind 1.4 m/s, pressure 1005.1 hPa, battery 13.7 V.
+Observation 00102: air 18.2 C, wind 1.5 m/s, pressure 1005.2 hPa, battery 13.8 V.
+[[MARKER 4]]
+Observation 00103: air 18.3 C, wind 1.6 m/s, pressure 1005.3 hPa, battery 13.9 V.
+Observation 00104: air 18.4 C, wind 1.7 m/s, pressure 1005.4 hPa, battery 11.4 V.
+Observation 00105: air 18.5 C, wind 1.8 m/s, pressure 1005.5 hPa, battery 11.5 V.
+Observation 00106: air 18.6 C, wind 1.9 m/s, pressure 1005.6 hPa, battery 11.6 V.
+Observation 00107: air 18.7 C, wind 2.0 m/s, pressure 1005.7 hPa, battery 11.7 V.
+Observation 00108: air 18.8 C, wind 2.1 m/s, pressure 1005.8 hPa, battery 11.8 V.
+Observation 00109: air 18.9 C, wind 2.2 m/s, pressure 1005.9 hPa, battery 11.9 V.
+Observation 00110: air 19.0 C, wind 2.3 m/s, pressure 1006.0 hPa, battery 12.0 V.
+Observation 00111: air 19.1 C, wind 2.4 m/s, pressure 1006.1 hPa, battery 12.1 V.
+Observation 00112: air 19.2 C, wind 2.5 m/s, pressure 1006.2 hPa, battery 12.2 V.
+Observation 00113: air 19.3 C, wind 2.6 m/s, pressure 1006.3 hPa, battery 12.3 V.
+Observation 00114: air 19.4 C, wind 2.7 m/s, pressure 1006.4 hPa, battery 12.4 V.
+Observation 00115: air 19.5 C, wind 2.8 m/s, pressure 1006.5 hPa, battery 12.5 V.
+Observation 00116: air 19.6 C, wind 2.9 m/s, pressure 1006.6 hPa, battery 12.6 V.
+Observation 00117: air 19.7 C, wind 3.0 m/s, pressure 1006.7 hPa, battery 12.7 V.
+Observation 00118: air 19.8 C, wind 3.1 m/s, pressure 1006.8 hPa, battery 12.8 V.
+Observation 00119: air 19.9 C, wind 3.2 m/s, pressure 1006.9 hPa, battery 12.9 V.
+Observation 00120: air 20.0 C, wind 3.3 m/s, pressure 1007.0 hPa, battery 13.0 V.
+Observation 00121: air 20.1 C, wind 3.4 m/s, pressure 1007.1 hPa, battery 13.1 V.
+Observation 00122: air 20.2 C, wind 3.5 m/s, pressure 1007.2 hPa, battery 13.2 V.
+Observation 00123: air 20.3 C, wind 3.6 m/s, pressure 1007.3 hPa, battery 13.3 V.
+Observation 00124: air 20.4 C, wind 3.7 m/s, pressure 1007.4 hPa, battery 13.4 V.
+Observation 00125: air 20.5 C, wind 3.8 m/s, pressure 1007.5 hPa, battery 13.5 V.
+Observation 00126: air 20.6 C, wind 3.9 m/s, pressure 1007.6 hPa, battery 13.6 V.
+Observation 00127: air 20.7 C, wind 4.0 m/s, pressure 1007.7 hPa, battery 13.7 V.
+Observation 00128: air 20.8 C, wind 4.1 m/s, pressure 1007.8 hPa, battery 13.8 V.
+Observation 00129: air 20.9 C, wind 4.2 m/s, pressure 1007.9 hPa, battery 13.9 V.
+Observation 00130: air 21.0 C, wind 4.3 m/s, pressure 1008.0 hPa, battery 11.4 V.
+Observation 00131: air 21.1 C, wind 4.4 m/s, pressure 1008.1 hPa, battery 11.5 V.
+Observation 00132: air 21.2 C, wind 4.5 m/s, pressure 1008.2 hPa, battery 11.6 V.
+Observation 00133: air 21.3 C, wind 4.6 m/s, pressure 1008.3 hPa, battery 11.7 V.
+Observation 00134: air 21.4 C, wind 4.7 m/s, pressure 1008.4 hPa, battery 11.8 V.
+Observation 00135: air 21.5 C, wind 4.8 m/s, pressure 1008.5 hPa, battery 11.9 V.
+Observation 00136: air 21.6 C, wind 4.9 m/s, pressure 1008.6 hPa, battery 12.0 V.
+Observation 00137: air 21.7 C, wind 5.0 m/s, pressure 1008.7 hPa, battery 12.1 V.
+Observation 00138: air 21.8 C, wind 5.1 m/s, pressure 1008.8 hPa, battery 12.2 V.
+Observation 00139: air 21.9 C, wind 5.2 m/s, pressure 1008.9 hPa, battery 12.3 V.
+Observation 00140: air 22.0 C, wind 5.3 m/s, pressure 1009.0 hPa, battery 12.4 V.
+Observation 00141: air 22.1 C, wind 5.4 m/s, pressure 1009.1 hPa, battery 12.5 V.
+Observation 00142: air 22.2 C, wind 5.5 m/s, pressure 1009.2 hPa, battery 12.6 V.
+Observation 00143: air 22.3 C, wind 5.6 m/s, pressure 1009.3 hPa, battery 12.7 V.
+Observation 00144: air 22.4 C, wind 5.7 m/s, pressure 1009.4 hPa, battery 12.8 V.
+Observation 00145: air 22.5 C, wind 5.8 m/s, pressure 1009.5 hPa, battery 12.9 V.
+Observation 00146: air 22.6 C, wind 5.9 m/s, pressure 1009.6 hPa, battery 13.0 V.
+Observation 00147: air 22.7 C, wind 6.0 m/s, pressure 1009.7 hPa, battery 13.1 V.
+Observation 00148: air 22.8 C, wind 6.1 m/s, pressure 1009.8 hPa, battery 13.2 V.
+Observation 00149: air 22.9 C, wind 6.2 m/s, pressure 1009.9 hPa, battery 13.3 V.
+Observation 00150: air 23.0 C, wind 6.3 m/s, pressure 1010.0 hPa, battery 13.4 V.
+Observation 00151: air 23.1 C, wind 6.4 m/s, pressure 1010.1 hPa, battery 13.5 V.
+[[MARKER 5]]
+Observation 00152: air 23.2 C, wind 6.5 m/s, pressure 1010.2 hPa, battery 13.6 V.
+Observation 00153: air 23.3 C, wind 6.6 m/s, pressure 1010.3 hPa, battery 13.7 V.
+Observation 00154: air 23.4 C, wind 6.7 m/s, pressure 1010.4 hPa, battery 13.8 V.
+Observation 00155: air 23.5 C, wind 6.8 m/s, pressure 1010.5 hPa, battery 13.9 V.
+Observation 00156: air 23.6 C, wind 6.9 m/s, pressure 1010.6 hPa, battery 11.4 V.
+Observation 00157: air 23.7 C, wind 7.0 m/s, pressure 1010.7 hPa, battery 11.5 V.
+Observation 00158: air 23.8 C, wind 7.1 m/s, pressure 1010.8 hPa, battery 11.6 V.
+Observation 00159: air 23.9 C, wind 7.2 m/s, pressure 1010.9 hPa, battery 11.7 V.
+Observation 00160: air 24.0 C, wind 7.3 m/s, pressure 1011.0 hPa, battery 11.8 V.
+Observation 00161: air 24.1 C, wind 7.4 m/s, pressure 1011.1 hPa, battery 11.9 V.
+Observation 00162: air 24.2 C, wind 7.5 m/s, pressure 1011.2 hPa, battery 12.0 V.
+Observation 00163: air 24.3 C, wind 7.6 m/s, pressure 1011.3 hPa, battery 12.1 V.
+Observation 00164: air 24.4 C, wind 7.7 m/s, pressure 1011.4 hPa, battery 12.2 V.
+Observation 00165: air 24.5 C, wind 7.8 m/s, pressure 1011.5 hPa, battery 12.3 V.
+Observation 00166: air 24.6 C, wind 7.9 m/s, pressure 1011.6 hPa, battery 12.4 V.
+Observation 00167: air 24.7 C, wind 8.0 m/s, pressure 1011.7 hPa, battery 12.5 V.
+Observation 00168: air 24.8 C, wind 8.1 m/s, pressure 1011.8 hPa, battery 12.6 V.
+Observation 00169: air 24.9 C, wind 8.2 m/s, pressure 1011.9 hPa, battery 12.7 V.
+Observation 00170: air 25.0 C, wind 8.3 m/s, pressure 1012.0 hPa, battery 12.8 V.
+Observation 00171: air 25.1 C, wind 8.4 m/s, pressure 1012.1 hPa, battery 12.9 V.
+Observation 00172: air 25.2 C, wind 8.5 m/s, pressure 1012.2 hPa, battery 13.0 V.
+Observation 00173: air 25.3 C, wind 8.6 m/s, pressure 1012.3 hPa, battery 13.1 V.
+Observation 00174: air 25.4 C, wind 0.0 m/s, pressure 1012.4 hPa, battery 13.2 V.
+Observation 00175: air 25.5 C, wind 0.1 m/s, pressure 1012.5 hPa, battery 13.3 V.
+Observation 00176: air 25.6 C, wind 0.2 m/s, pressure 1012.6 hPa, battery 13.4 V.
+Observation 00177: air 25.7 C, wind 0.3 m/s, pressure 1012.7 hPa, battery 13.5 V.
+Observation 00178: air 25.8 C, wind 0.4 m/s, pressure 1012.8 hPa, battery 13.6 V.
+Observation 00179: air 25.9 C, wind 0.5 m/s, pressure 1012.9 hPa, battery 13.7 V.
+Observation 00180: air 26.0 C, wind 0.6 m/s, pressure 1013.0 hPa, battery 13.8 V.
+Observation 00181: air 26.1 C, wind 0.7 m/s, pressure 1013.1 hPa, battery 13.9 V.
+Observation 00182: air 26.2 C, wind 0.8 m/s, pressure 1013.2 hPa, battery 11.4 V.
+Observation 00183: air 26.3 C, wind 0.9 m/s, pressure 1013.3 hPa, battery 11.5 V.
+Observation 00184: air 26.4 C, wind 1.0 m/s, pressure 1013.4 hPa, battery 11.6 V.
+Observation 00185: air 26.5 C, wind 1.1 m/s, pressure 1013.5 hPa, battery 11.7 V.
+Observation 00186: air 26.6 C, wind 1.2 m/s, pressure 1013.6 hPa, battery 11.8 V.
+Observation 00187: air 26.7 C, wind 1.3 m/s, pressure 1013.7 hPa, battery 11.9 V.
+Observation 00188: air 26.8 C, wind 1.4 m/s, pressure 1013.8 hPa, battery 12.0 V.
+Observation 00189: air 26.9 C, wind 1.5 m/s, pressure 1013.9 hPa, battery 12.1 V.
+Observation 00190: air 27.0 C, wind 1.6 m/s, pressure 1014.0 hPa, battery 12.2 V.
+Observation 00191: air 27.1 C, wind 1.7 m/s, pressure 1014.1 hPa, battery 12.3 V.
+Observation 00192: air 27.2 C, wind 1.8 m/s, pressure 1014.2 hPa, battery 12.4 V.
+Observation 00193: air 27.3 C, wind 1.9 m/s, pressure 1014.3 hPa, battery 12.5 V.
+Observation 00194: air 27.4 C, wind 2.0 m/s, pressure 1014.4 hPa, battery 12.6 V.
+Observation 00195: air 27.5 C, wind 2.1 m/s, pressure 1014.5 hPa, battery 12.7 V.
+Observation 00196: air 27.6 C, wind 2.2 m/s, pressure 1014.6 hPa, battery 12.8 V.
+Observation 00197: air 27.7 C, wind 2.3 m/s, pressure 1014.7 hPa, battery 12.9 V.
+Observation 00198: air 27.8 C, wind 2.4 m/s, pressure 1014.8 hPa, battery 13.0 V.
+Observation 00199: air 27.9 C, wind 2.5 m/s, pressure 1014.9 hPa, battery 13.1 V.
+Observation 00200: air 28.0 C, wind 2.6 m/s, pressure 1015.0 hPa, battery 13.2 V.
+[[MARKER 6]]
+Observation 00201: air 28.1 C, wind 2.7 m/s, pressure 1015.1 hPa, battery 13.3 V.
+Observation 00202: air 28.2 C, wind 2.8 m/s, pressure 1015.2 hPa, battery 13.4 V.
+Observation 00203: air 28.3 C, wind 2.9 m/s, pressure 1015.3 hPa, battery 13.5 V.
+Observation 00204: air 28.4 C, wind 3.0 m/s, pressure 1015.4 hPa, battery 13.6 V.
+Observation 00205: air 28.5 C, wind 3.1 m/s, pressure 1015.5 hPa, battery 13.7 V.
+Observation 00206: air 28.6 C, wind 3.2 m/s, pressure 1015.6 hPa, battery 13.8 V.
+Observation 00207: air 28.7 C, wind 3.3 m/s, pressure 1015.7 hPa, battery 13.9 V.
+Observation 00208: air 28.8 C, wind 3.4 m/s, pressure 1015.8 hPa, battery 11.4 V.
+Observation 00209: air 28.9 C, wind 3.5 m/s, pressure 1015.9 hPa, battery 11.5 V.
+Observation 00210: air 8.0 C, wind 3.6 m/s, pressure 1016.0 hPa, battery 11.6 V.
+Observation 00211: air 8.1 C, wind 3.7 m/s, pressure 1016.1 hPa, battery 11.7 V.
+Observation 00212: air 8.2 C, wind 3.8 m/s, pressure 1016.2 hPa, battery 11.8 V.
+Observation 00213: air 8.3 C, wind 3.9 m/s, pressure 1016.3 hPa, battery 11.9 V.
+Observation 00214: air 8.4 C, wind 4.0 m/s, pressure 1016.4 hPa, battery 12.0 V.
+Observation 00215: air 8.5 C, wind 4.1 m/s, pressure 1016.5 hPa, battery 12.1 V.
+Observation 00216: air 8.6 C, wind 4.2 m/s, pressure 1016.6 hPa, battery 12.2 V.
+Observation 00217: air 8.7 C, wind 4.3 m/s, pressure 1016.7 hPa, battery 12.3 V.
+Observation 00218: air 8.8 C, wind 4.4 m/s, pressure 1016.8 hPa, battery 12.4 V.
+Observation 00219: air 8.9 C, wind 4.5 m/s, pressure 1016.9 hPa, battery 12.5 V.
+Observation 00220: air 9.0 C, wind 4.6 m/s, pressure 1017.0 hPa, battery 12.6 V.
+Observation 00221: air 9.1 C, wind 4.7 m/s, pressure 1017.1 hPa, battery 12.7 V.
+Observation 00222: air 9.2 C, wind 4.8 m/s, pressure 1017.2 hPa, battery 12.8 V.
+Observation 00223: air 9.3 C, wind 4.9 m/s, pressure 1017.3 hPa, battery 12.9 V.
+Observation 00224: air 9.4 C, wind 5.0 m/s, pressure 1017.4 hPa, battery 13.0 V.
+Observation 00225: air 9.5 C, wind 5.1 m/s, pressure 1017.5 hPa, battery 13.1 V.
+Observation 00226: air 9.6 C, wind 5.2 m/s, pressure 1017.6 hPa, battery 13.2 V.
+Observation 00227: air 9.7 C, wind 5.3 m/s, pressure 1017.7 hPa, battery 13.3 V.
+Observation 00228: air 9.8 C, wind 5.4 m/s, pressure 1017.8 hPa, battery 13.4 V.
+Observation 00229: air 9.9 C, wind 5.5 m/s, pressure 1017.9 hPa, battery 13.5 V.
+Observation 00230: air 10.0 C, wind 5.6 m/s, pressure 1018.0 hPa, battery 13.6 V.
+Observation 00231: air 10.1 C, wind 5.7 m/s, pressure 1018.1 hPa, battery 13.7 V.
+Observation 00232: air 10.2 C, wind 5.8 m/s, pressure 1018.2 hPa, battery 13.8 V.
+Observation 00233: air 10.3 C, wind 5.9 m/s, pressure 1018.3 hPa, battery 13.9 V.
+Observation 00234: air 10.4 C, wind 6.0 m/s, pressure 1018.4 hPa, battery 11.4 V.
+Observation 00235: air 10.5 C, wind 6.1 m/s, pressure 1018.5 hPa, battery 11.5 V.
+Observation 00236: air 10.6 C, wind 6.2 m/s, pressure 1018.6 hPa, battery 11.6 V.
+Observation 00237: air 10.7 C, wind 6.3 m/s, pressure 1018.7 hPa, battery 11.7 V.
+Observation 00238: air 10.8 C, wind 6.4 m/s, pressure 1018.8 hPa, battery 11.8 V.
+Observation 00239: air 10.9 C, wind 6.5 m/s, pressure 1018.9 hPa, battery 11.9 V.
+Observation 00240: air 11.0 C, wind 6.6 m/s, pressure 1019.0 hPa, battery 12.0 V.
+Observation 00241: air 11.1 C, wind 6.7 m/s, pressure 1019.1 hPa, battery 12.1 V.
+Observation 00242: air 11.2 C, wind 6.8 m/s, pressure 1019.2 hPa, battery 12.2 V.
+Observation 00243: air 11.3 C, wind 6.9 m/s, pressure 1019.3 hPa, battery 12.3 V.
+Observation 00244: air 11.4 C, wind 7.0 m/s, pressure 1019.4 hPa, battery 12.4 V.
+Observation 00245: air 11.5 C, wind 7.1 m/s, pressure 1019.5 hPa, battery 12.5 V.
+Observation 00246: air 11.6 C, wind 7.2 m/s, pressure 1019.6 hPa, battery 12.6 V.
+Observation 00247: air 11.7 C, wind 7.3 m/s, pressure 1019.7 hPa, battery 12.7 V.
+Observation 00248: air 11.8 C, wind 7.4 m/s, pressure 1019.8 hPa, battery 12.8 V.
+Observation 00249: air 11.9 C, wind 7.5 m/s, pressure 1019.9 hPa, battery 12.9 V.
+[[MARKER 7]]
+Observation 00250: air 12.0 C, wind 7.6 m/s, pressure 1020.0 hPa, battery 13.0 V.
+Observation 00251: air 12.1 C, wind 7.7 m/s, pressure 1020.1 hPa, battery 13.1 V.
+Observation 00252: air 12.2 C, wind 7.8 m/s, pressure 1020.2 hPa, battery 13.2 V.
+Observation 00253: air 12.3 C, wind 7.9 m/s, pressure 1020.3 hPa, battery 13.3 V.
+Observation 00254: air 12.4 C, wind 8.0 m/s, pressure 1020.4 hPa, battery 13.4 V.
+Observation 00255: air 12.5 C, wind 8.1 m/s, pressure 1020.5 hPa, battery 13.5 V.
+Observation 00256: air 12.6 C, wind 8.2 m/s, pressure 1020.6 hPa, battery 13.6 V.
+Observation 00257: air 12.7 C, wind 8.3 m/s, pressure 1020.7 hPa, battery 13.7 V.
+Observation 00258: air 12.8 C, wind 8.4 m/s, pressure 1020.8 hPa, battery 13.8 V.
+Observation 00259: air 12.9 C, wind 8.5 m/s, pressure 1020.9 hPa, battery 13.9 V.
+Observation 00260: air 13.0 C, wind 8.6 m/s, pressure 1021.0 hPa, battery 11.4 V.
+Observation 00261: air 13.1 C, wind 0.0 m/s, pressure 1021.1 hPa, battery 11.5 V.
+Observation 00262: air 13.2 C, wind 0.1 m/s, pressure 1021.2 hPa, battery 11.6 V.
+Observation 00263: air 13.3 C, wind 0.2 m/s, pressure 1021.3 hPa, battery 11.7 V.
+Observation 00264: air 13.4 C, wind 0.3 m/s, pressure 1021.4 hPa, battery 11.8 V.
+Observation 00265: air 13.5 C, wind 0.4 m/s, pressure 1021.5 hPa, battery 11.9 V.
+Observation 00266: air 13.6 C, wind 0.5 m/s, pressure 1021.6 hPa, battery 12.0 V.
+Observation 00267: air 13.7 C, wind 0.6 m/s, pressure 1021.7 hPa, battery 12.1 V.
+Observation 00268: air 13.8 C, wind 0.7 m/s, pressure 1021.8 hPa, battery 12.2 V.
+Observation 00269: air 13.9 C, wind 0.8 m/s, pressure 1021.9 hPa, battery 12.3 V.
+Observation 00270: air 14.0 C, wind 0.9 m/s, pressure 1022.0 hPa, battery 12.4 V.
+Observation 00271: air 14.1 C, wind 1.0 m/s, pressure 1022.1 hPa, battery 12.5 V.
+Observation 00272: air 14.2 C, wind 1.1 m/s, pressure 1022.2 hPa, battery 12.6 V.
+Observation 00273: air 14.3 C, wind 1.2 m/s, pressure 1022.3 hPa, battery 12.7 V.
+Observation 00274: air 14.4 C, wind 1.3 m/s, pressure 1022.4 hPa, battery 12.8 V.
+Observation 00275: air 14.5 C, wind 1.4 m/s, pressure 1022.5 hPa, battery 12.9 V.
+Observation 00276: air 14.6 C, wind 1.5 m/s, pressure 1022.6 hPa, battery 13.0 V.
+Observation 00277: air 14.7 C, wind 1.6 m/s, pressure 1022.7 hPa, battery 13.1 V.
+Observation 00278: air 14.8 C, wind 1.7 m/s, pressure 1022.8 hPa, battery 13.2 V.
+Observation 00279: air 14.9 C, wind 1.8 m/s, pressure 1022.9 hPa, battery 13.3 V.
+Observation 00280: air 15.0 C, wind 1.9 m/s, pressure 1023.0 hPa, battery 13.4 V.
+Observation 00281: air 15.1 C, wind 2.0 m/s, pressure 1023.1 hPa, battery 13.5 V.
+Observation 00282: air 15.2 C, wind 2.1 m/s, pressure 1023.2 hPa, battery 13.6 V.
+Observation 00283: air 15.3 C, wind 2.2 m/s, pressure 1023.3 hPa, battery 13.7 V.
+Observation 00284: air 15.4 C, wind 2.3 m/s, pressure 1023.4 hPa, battery 13.8 V.
+Observation 00285: air 15.5 C, wind 2.4 m/s, pressure 1023.5 hPa, battery 13.9 V.
+Observation 00286: air 15.6 C, wind 2.5 m/s, pressure 1023.6 hPa, battery 11.4 V.
+Observation 00287: air 15.7 C, wind 2.6 m/s, pressure 1023.7 hPa, battery 11.5 V.
+Observation 00288: air 15.8 C, wind 2.7 m/s, pressure 1023.8 hPa, battery 11.6 V.
+Observation 00289: air 15.9 C, wind 2.8 m/s, pressure 1023.9 hPa, battery 11.7 V.
+Observation 00290: air 16.0 C, wind 2.9 m/s, pressure 1024.0 hPa, battery 11.8 V.
+Observation 00291: air 16.1 C, wind 3.0 m/s, pressure 1024.1 hPa, battery 11.9 V.
+Observation 00292: air 16.2 C, wind 3.1 m/s, pressure 1024.2 hPa, battery 12.0 V.
+Observation 00293: air 16.3 C, wind 3.2 m/s, pressure 1024.3 hPa, battery 12.1 V.
+Observation 00294: air 16.4 C, wind 3.3 m/s, pressure 1024.4 hPa, battery 12.2 V.
+Observation 00295: air 16.5 C, wind 3.4 m/s, pressure 1024.5 hPa, battery 12.3 V.
+Observation 00296: air 16.6 C, wind 3.5 m/s, pressure 1024.6 hPa, battery 12.4 V.
+Observation 00297: air 16.7 C, wind 3.6 m/s, pressure 1024.7 hPa, battery 12.5 V.
+Observation 00298: air 16.8 C, wind 3.7 m/s, pressure 1024.8 hPa, battery 12.6 V.
+[[MARKER 8]]
+Observation 00299: air 16.9 C, wind 3.8 m/s, pressure 1024.9 hPa, battery 12.7 V.
+Observation 00300: air 17.0 C, wind 3.9 m/s, pressure 1025.0 hPa, battery 12.8 V.
+Observation 00301: air 17.1 C, wind 4.0 m/s, pressure 1025.1 hPa, battery 12.9 V.
+Observation 00302: air 17.2 C, wind 4.1 m/s, pressure 1025.2 hPa, battery 13.0 V.
+Observation 00303: air 17.3 C, wind 4.2 m/s, pressure 1025.3 hPa, battery 13.1 V.
+Observation 00304: air 17.4 C, wind 4.3 m/s, pressure 1025.4 hPa, battery 13.2 V.
+Observation 00305: air 17.5 C, wind 4.4 m/s, pressure 1025.5 hPa, battery 13.3 V.
+Observation 00306: air 17.6 C, wind 4.5 m/s, pressure 1025.6 hPa, battery 13.4 V.
+Observation 00307: air 17.7 C, wind 4.6 m/s, pressure 1025.7 hPa, battery 13.5 V.
+Observation 00308: air 17.8 C, wind 4.7 m/s, pressure 1025.8 hPa, battery 13.6 V.
+Observation 00309: air 17.9 C, wind 4.8 m/s, pressure 1025.9 hPa, battery 13.7 V.
+Observation 00310: air 18.0 C, wind 4.9 m/s, pressure 1026.0 hPa, battery 13.8 V.
+Observation 00311: air 18.1 C, wind 5.0 m/s, pressure 1026.1 hPa, battery 13.9 V.
+Observation 00312: air 18.2 C, wind 5.1 m/s, pressure 1026.2 hPa, battery 11.4 V.
+Observation 00313: air 18.3 C, wind 5.2 m/s, pressure 1026.3 hPa, battery 11.5 V.
+Observation 00314: air 18.4 C, wind 5.3 m/s, pressure 1026.4 hPa, battery 11.6 V.
+Observation 00315: air 18.5 C, wind 5.4 m/s, pressure 1026.5 hPa, battery 11.7 V.
+Observation 00316: air 18.6 C, wind 5.5 m/s, pressure 1026.6 hPa, battery 11.8 V.
+Observation 00317: air 18.7 C, wind 5.6 m/s, pressure 1026.7 hPa, battery 11.9 V.
+Observation 00318: air 18.8 C, wind 5.7 m/s, pressure 1026.8 hPa, battery 12.0 V.
+Observation 00319: air 18.9 C, wind 5.8 m/s, pressure 1026.9 hPa, battery 12.1 V.
+Observation 00320: air 19.0 C, wind 5.9 m/s, pressure 1027.0 hPa, battery 12.2 V.
+Observation 00321: air 19.1 C, wind 6.0 m/s, pressure 1027.1 hPa, battery 12.3 V.
+Observation 00322: air 19.2 C, wind 6.1 m/s, pressure 1027.2 hPa, battery 12.4 V.
+Observation 00323: air 19.3 C, wind 6.2 m/s, pressure 1027.3 hPa, battery 12.5 V.
+Observation 00324: air 19.4 C, wind 6.3 m/s, pressure 1027.4 hPa, battery 12.6 V.
+Observation 00325: air 19.5 C, wind 6.4 m/s, pressure 1027.5 hPa, battery 12.7 V.
+Observation 00326: air 19.6 C, wind 6.5 m/s, pressure 1027.6 hPa, battery 12.8 V.
+Observation 00327: air 19.7 C, wind 6.6 m/s, pressure 1027.7 hPa, battery 12.9 V.
+Observation 00328: air 19.8 C, wind 6.7 m/s, pressure 1027.8 hPa, battery 13.0 V.
+Observation 00329: air 19.9 C, wind 6.8 m/s, pressure 1027.9 hPa, battery 13.1 V.
+Observation 00330: air 20.0 C, wind 6.9 m/s, pressure 1028.0 hPa, battery 13.2 V.
+Observation 00331: air 20.1 C, wind 7.0 m/s, pressure 1028.1 hPa, battery 13.3 V.
+Observation 00332: air 20.2 C, wind 7.1 m/s, pressure 1028.2 hPa, battery 13.4 V.
+Observation 00333: air 20.3 C, wind 7.2 m/s, pressure 1028.3 hPa, battery 13.5 V.
+Observation 00334: air 20.4 C, wind 7.3 m/s, pressure 1028.4 hPa, battery 13.6 V.
+Observation 00335: air 20.5 C, wind 7.4 m/s, pressure 1028.5 hPa, battery 13.7 V.
+Observation 00336: air 20.6 C, wind 7.5 m/s, pressure 1028.6 hPa, battery 13.8 V.
+Observation 00337: air 20.7 C, wind 7.6 m/s, pressure 1028.7 hPa, battery 13.9 V.
+Observation 00338: air 20.8 C, wind 7.7 m/s, pressure 1028.8 hPa, battery 11.4 V.
+Observation 00339: air 20.9 C, wind 7.8 m/s, pressure 1028.9 hPa, battery 11.5 V.
+Observation 00340: air 21.0 C, wind 7.9 m/s, pressure 1029.0 hPa, battery 11.6 V.
+Observation 00341: air 21.1 C, wind 8.0 m/s, pressure 1029.1 hPa, battery 11.7 V.
+Observation 00342: air 21.2 C, wind 8.1 m/s, pressure 1029.2 hPa, battery 11.8 V.
+Observation 00343: air 21.3 C, wind 8.2 m/s, pressure 1029.3 hPa, battery 11.9 V.
+Observation 00344: air 21.4 C, wind 8.3 m/s, pressure 1029.4 hPa, battery 12.0 V.
+Observation 00345: air 21.5 C, wind 8.4 m/s, pressure 1029.5 hPa, battery 12.1 V.
+Observation 00346: air 21.6 C, wind 8.5 m/s, pressure 1029.6 hPa, battery 12.2 V.
+Observation 00347: air 21.7 C, wind 8.6 m/s, pressure 1029.7 hPa, battery 12.3 V.
+Observation 00348: air 21.8 C, wind 0.0 m/s, pressure 1029.8 hPa, battery 12.4 V.
+Observation 00349: air 21.9 C, wind 0.1 m/s, pressure 1029.9 hPa, battery 12.5 V.
+Observation 00350: air 22.0 C, wind 0.2 m/s, pressure 1030.0 hPa, battery 12.6 V.
+Observation 00351: air 22.1 C, wind 0.3 m/s, pressure 1030.1 hPa, battery 12.7 V.
+Observation 00352: air 22.2 C, wind 0.4 m/s, pressure 1030.2 hPa, battery 12.8 V.
+
+---
+
+Some lines above consist only of a tag: two open square brackets, the word MARKER in capitals, a number, then two close square brackets.
+
+Count those lines. Reply with one line and nothing else, in this form, with the number substituted:
+
+COUNT: 42

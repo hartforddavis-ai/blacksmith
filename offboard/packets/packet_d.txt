@@ -1,0 +1,120 @@
+[[MARKER 1]]
+The station records air temperature once every ten minutes.
+Readings are written to a rolling file and rotated at midnight local time.
+A reading that arrives out of order is kept, not discarded, and flagged.
+Wind speed is sampled at one hertz and averaged over the reporting interval.
+The gust value is the highest single sample within that same interval.
+Humidity is measured by a capacitive element mounted inside the screen.
+The screen is a louvred enclosure painted white to limit radiative heating.
+Barometric pressure is corrected to sea level using the station elevation.
+Elevation is surveyed once at installation and stored in the config file.
+Rainfall is counted by a tipping bucket with a nominal resolution.
+Each tip is timestamped so that intensity can be derived after the fact.
+The bucket is inspected quarterly for debris and for insect nests.
+Solar radiation is reported in watts per square metre over the interval.
+[[MARKER 2]]
+The pyranometer dome is cleaned on the same schedule as the bucket.
+Soil temperature probes sit at three depths below the undisturbed surface.
+Depths are recorded in centimetres and are not adjusted after installation.
+Battery voltage is logged alongside every observation for later diagnosis.
+A voltage below the configured floor raises a maintenance flag in the record.
+The logger keeps its own clock and disciplines it from a network time source.
+If the time source is unreachable the logger continues on its internal clock.
+Drift accumulated during an outage is reported but never silently corrected.
+Data are transmitted in batches when the link is available and queued when not.
+The queue is bounded and the oldest unsent batch is dropped when it overflows.
+A dropped batch is counted so that gaps in the archive can be explained.
+Quality control runs on receipt and marks values that fail a range check.
+Range checks are seasonal and are held in a table separate from the code.
+[[MARKER 3]]
+A value that fails a check is retained in the archive with its flag attached.
+Nothing is deleted from the archive once written, only annotated.
+Monthly summaries are computed from flagged data with the flags respected.
+The summary states how many observations were excluded and on what grounds.
+Station metadata changes are versioned with the date the change took effect.
+A sensor swap is a metadata change and is recorded as one.
+Calibration certificates are stored with the metadata and never in the archive.
+The archive is copied nightly to a second site on separate power.
+Restores are exercised twice a year against the second site, not the first.
+An exercise that is not observed by a second person is not counted.
+Retention is indefinite for observations and five years for diagnostics.
+Diagnostics include voltage, clock discipline, and link availability.
+The distinction matters because diagnostics are large and observations are not.
+[[MARKER 4]]
+Access to the archive is read-only except through the ingest path.
+The ingest path is the only writer and it is single-threaded by design.
+Concurrency was tried once and produced interleaved records under load.
+The single writer has held for eleven years without an ordering fault.
+Reports are generated from the archive and never from the live logger.
+A report that disagrees with the archive is a fault in the report.
+Observation 00001: air 8.1 C, wind 0.1 m/s, pressure 995.1 hPa, battery 11.5 V.
+Observation 00002: air 8.2 C, wind 0.2 m/s, pressure 995.2 hPa, battery 11.6 V.
+Observation 00003: air 8.3 C, wind 0.3 m/s, pressure 995.3 hPa, battery 11.7 V.
+Observation 00004: air 8.4 C, wind 0.4 m/s, pressure 995.4 hPa, battery 11.8 V.
+Observation 00005: air 8.5 C, wind 0.5 m/s, pressure 995.5 hPa, battery 11.9 V.
+Observation 00006: air 8.6 C, wind 0.6 m/s, pressure 995.6 hPa, battery 12.0 V.
+Observation 00007: air 8.7 C, wind 0.7 m/s, pressure 995.7 hPa, battery 12.1 V.
+[[MARKER 5]]
+Observation 00008: air 8.8 C, wind 0.8 m/s, pressure 995.8 hPa, battery 12.2 V.
+Observation 00009: air 8.9 C, wind 0.9 m/s, pressure 995.9 hPa, battery 12.3 V.
+Observation 00010: air 9.0 C, wind 1.0 m/s, pressure 996.0 hPa, battery 12.4 V.
+Observation 00011: air 9.1 C, wind 1.1 m/s, pressure 996.1 hPa, battery 12.5 V.
+Observation 00012: air 9.2 C, wind 1.2 m/s, pressure 996.2 hPa, battery 12.6 V.
+Observation 00013: air 9.3 C, wind 1.3 m/s, pressure 996.3 hPa, battery 12.7 V.
+Observation 00014: air 9.4 C, wind 1.4 m/s, pressure 996.4 hPa, battery 12.8 V.
+Observation 00015: air 9.5 C, wind 1.5 m/s, pressure 996.5 hPa, battery 12.9 V.
+Observation 00016: air 9.6 C, wind 1.6 m/s, pressure 996.6 hPa, battery 13.0 V.
+Observation 00017: air 9.7 C, wind 1.7 m/s, pressure 996.7 hPa, battery 13.1 V.
+Observation 00018: air 9.8 C, wind 1.8 m/s, pressure 996.8 hPa, battery 13.2 V.
+Observation 00019: air 9.9 C, wind 1.9 m/s, pressure 996.9 hPa, battery 13.3 V.
+Observation 00020: air 10.0 C, wind 2.0 m/s, pressure 997.0 hPa, battery 13.4 V.
+[[MARKER 6]]
+Observation 00021: air 10.1 C, wind 2.1 m/s, pressure 997.1 hPa, battery 13.5 V.
+Observation 00022: air 10.2 C, wind 2.2 m/s, pressure 997.2 hPa, battery 13.6 V.
+Observation 00023: air 10.3 C, wind 2.3 m/s, pressure 997.3 hPa, battery 13.7 V.
+Observation 00024: air 10.4 C, wind 2.4 m/s, pressure 997.4 hPa, battery 13.8 V.
+Observation 00025: air 10.5 C, wind 2.5 m/s, pressure 997.5 hPa, battery 13.9 V.
+Observation 00026: air 10.6 C, wind 2.6 m/s, pressure 997.6 hPa, battery 11.4 V.
+Observation 00027: air 10.7 C, wind 2.7 m/s, pressure 997.7 hPa, battery 11.5 V.
+Observation 00028: air 10.8 C, wind 2.8 m/s, pressure 997.8 hPa, battery 11.6 V.
+Observation 00029: air 10.9 C, wind 2.9 m/s, pressure 997.9 hPa, battery 11.7 V.
+Observation 00030: air 11.0 C, wind 3.0 m/s, pressure 998.0 hPa, battery 11.8 V.
+Observation 00031: air 11.1 C, wind 3.1 m/s, pressure 998.1 hPa, battery 11.9 V.
+Observation 00032: air 11.2 C, wind 3.2 m/s, pressure 998.2 hPa, battery 12.0 V.
+Observation 00033: air 11.3 C, wind 3.3 m/s, pressure 998.3 hPa, battery 12.1 V.
+[[MARKER 7]]
+Observation 00034: air 11.4 C, wind 3.4 m/s, pressure 998.4 hPa, battery 12.2 V.
+Observation 00035: air 11.5 C, wind 3.5 m/s, pressure 998.5 hPa, battery 12.3 V.
+Observation 00036: air 11.6 C, wind 3.6 m/s, pressure 998.6 hPa, battery 12.4 V.
+Observation 00037: air 11.7 C, wind 3.7 m/s, pressure 998.7 hPa, battery 12.5 V.
+Observation 00038: air 11.8 C, wind 3.8 m/s, pressure 998.8 hPa, battery 12.6 V.
+Observation 00039: air 11.9 C, wind 3.9 m/s, pressure 998.9 hPa, battery 12.7 V.
+Observation 00040: air 12.0 C, wind 4.0 m/s, pressure 999.0 hPa, battery 12.8 V.
+Observation 00041: air 12.1 C, wind 4.1 m/s, pressure 999.1 hPa, battery 12.9 V.
+Observation 00042: air 12.2 C, wind 4.2 m/s, pressure 999.2 hPa, battery 13.0 V.
+Observation 00043: air 12.3 C, wind 4.3 m/s, pressure 999.3 hPa, battery 13.1 V.
+Observation 00044: air 12.4 C, wind 4.4 m/s, pressure 999.4 hPa, battery 13.2 V.
+Observation 00045: air 12.5 C, wind 4.5 m/s, pressure 999.5 hPa, battery 13.3 V.
+Observation 00046: air 12.6 C, wind 4.6 m/s, pressure 999.6 hPa, battery 13.4 V.
+[[MARKER 8]]
+Observation 00047: air 12.7 C, wind 4.7 m/s, pressure 999.7 hPa, battery 13.5 V.
+Observation 00048: air 12.8 C, wind 4.8 m/s, pressure 999.8 hPa, battery 13.6 V.
+Observation 00049: air 12.9 C, wind 4.9 m/s, pressure 999.9 hPa, battery 13.7 V.
+Observation 00050: air 13.0 C, wind 5.0 m/s, pressure 1000.0 hPa, battery 13.8 V.
+Observation 00051: air 13.1 C, wind 5.1 m/s, pressure 1000.1 hPa, battery 13.9 V.
+Observation 00052: air 13.2 C, wind 5.2 m/s, pressure 1000.2 hPa, battery 11.4 V.
+Observation 00053: air 13.3 C, wind 5.3 m/s, pressure 1000.3 hPa, battery 11.5 V.
+Observation 00054: air 13.4 C, wind 5.4 m/s, pressure 1000.4 hPa, battery 11.6 V.
+Observation 00055: air 13.5 C, wind 5.5 m/s, pressure 1000.5 hPa, battery 11.7 V.
+Observation 00056: air 13.6 C, wind 5.6 m/s, pressure 1000.6 hPa, battery 11.8 V.
+Observation 00057: air 13.7 C, wind 5.7 m/s, pressure 1000.7 hPa, battery 11.9 V.
+Observation 00058: air 13.8 C, wind 5.8 m/s, pressure 1000.8 hPa, battery 12.0 V.
+Observation 00059: air 13.9 C, wind 5.9 m/s, pressure 1000.9 hPa, battery 12.1 V.
+
+---
+
+Some lines above consist only of a tag: two open square brackets, the word MARKER in capitals, a number, then two close square brackets.
+
+Count those lines. Reply with one line and nothing else, in this form, with the number substituted:
+
+COUNT: 42
