@@ -51,7 +51,11 @@ RULE = """
 IF a SOURCES digest moved  → regenerate. Expected; sources change.
 IF the JOB digest moved    → a different task. Check it is the one you want.
 IF the KERNEL digest moved → the instrument changed.
-                             Law 1 ruling required before use."""
+                             Law 1 ruling required before use.
+
+WHEN the reply lands   → python3 quotes.py runs/<the reply file>
+                         Checks every VERIFIED row quotes the pasted bytes.
+                         A reply that fails is discarded whole."""
 
 
 def digest(text):
