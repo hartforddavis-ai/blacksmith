@@ -56,22 +56,17 @@ BLOCKED_ENV_PREFIXES = (
 DEFAULT_TOOLS = "Read,Grep,Glob"
 
 # Measured on Darwin 25.6 this cycle, by the generator, by spawning a script
-# with env={"HOME":..., "PATH":...} and reading back os.environ. Not reviewed by
-# anyone else, and not measured on any other platform.
+# with env={"HOME":..., "PATH":...} and reading back os.environ. Unreviewed, and
+# not measured on any other platform. `/usr/bin/env` arrived clean; CPython also
+# carried LC_CTYPE and __CF_USER_TEXT_ENCODING; `/usr/bin/python3` — Apple's
+# stub, which re-execs through xcrun — also carried CPATH, LIBRARY_PATH, MANPATH
+# and SDKROOT, none of them supplied by the parent.
 #
-# The result that matters is not this list, it is what producing it showed:
-# `env=` controls what crosses the exec, and does not control what the child
-# ends up with. `/usr/bin/env` arrived clean; a CPython process additionally
-# carried LC_CTYPE and __CF_USER_TEXT_ENCODING, added by the platform after
-# exec; and `/usr/bin/python3` — Apple's Command Line Tools stub, which re-execs
-# through xcrun — additionally carried CPATH, LIBRARY_PATH, MANPATH and SDKROOT,
-# none of which the parent supplied.
-#
-# So the parent's environment dict is a floor, not a ceiling. The names below
-# are benign. The vector is not: any runner that is a wrapper script re-execs,
-# and a re-exec can add anything the wrapper's own startup puts there. That is
-# why `inspect_runner` records whether the runner is a script, rather than this
-# module pretending it can prevent the amendment.
+# So `env=` controls what crosses the exec, not what the child ends up with: the
+# parent's dict is a floor, not a ceiling. These names are benign, the vector is
+# not — any wrapper-script runner re-execs, and a re-exec adds whatever its own
+# startup puts there. Hence `inspect_runner` records whether the runner is a
+# script, rather than pretending to prevent the amendment.
 PLATFORM_INJECTED_ENV = frozenset({"LC_CTYPE", "__CF_USER_TEXT_ENCODING"})
 
 
@@ -91,10 +86,9 @@ def inspect_runner(path) -> dict:
     and version-manager shims that a `claude` on the PATH is most likely to be
     are exactly this shape.
 
-    This records the fact rather than refusing it — refusing every script would
-    refuse the real runner on most installations. What must not happen is the
-    fact going unrecorded, so a later reading of the evidence can assume the
-    child's environment was the one the parent composed.
+    Recorded rather than refused: refusing every script would refuse the real
+    runner on most installations. Going unrecorded is the failure — a later
+    reading would assume the child's environment was the one the parent composed.
     """
     real = Path(os.path.realpath(str(path)))
     head = b""
@@ -133,9 +127,8 @@ class LaunchPlan:
             "cwd": self.cwd,
             "isolation_grade": self.isolation_grade,
             "runner": dict(self.runner),
-            # The parent composed `env_names`. It did not necessarily deliver
-            # exactly that set — see PLATFORM_INJECTED_ENV. Stated here so a
-            # reader of the record does not have to know the module to know it.
+            # The parent composed `env_names`; it did not necessarily deliver
+            # exactly that set — see PLATFORM_INJECTED_ENV.
             "env_is_a_floor_not_a_ceiling": True,
             "platform_injected_env": sorted(PLATFORM_INJECTED_ENV),
             # Restated in the record rather than left to the reader, because

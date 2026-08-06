@@ -13,6 +13,9 @@ failure mode "a junk file got hashed", which is visible in the diff.
 
 Tests are excluded deliberately. The manifest is the sealed set the parent
 attests before launch; a test file changing is not a Ring 0 integrity event.
+
+This module is not excluded. It decides what the sealed set contains, so a
+manifest that skips its own author reports all clear on the edit worth making.
 """
 
 from __future__ import annotations
@@ -32,8 +35,7 @@ def members(root: Path | None = None) -> list[str]:
     """Every Ring 0 source plus the spec, the assumptions, and the contract."""
     root = root or HERE
     sources = sorted(
-        p.name for p in root.glob("*.py")
-        if not p.name.startswith("test_") and p.name != Path(__file__).name)
+        p.name for p in root.glob("*.py") if not p.name.startswith("test_"))
     fixed = sorted(name for name in FIXED if (root / name).is_file())
     return fixed + sources
 
@@ -45,6 +47,36 @@ def render(root: Path | None = None) -> str:
         digest = hashlib.sha256((root / name).read_bytes()).hexdigest()
         lines.append(f"{digest}  {name}")
     return "\n".join(lines) + "\n"
+
+
+def as_check() -> dict:
+    """Render the manifest's own re-derivation as a gauge check entry.
+
+    Compares `render()` to `MANIFEST.sha256` on disk -- the same comparison
+    `--check` already performs. No second hashing path: this reads the
+    existing result rather than re-deriving Ring 0 integrity a different way,
+    which is the drift `members()`'s docstring warns a hand-maintained list
+    would silently reintroduce.
+
+    No `root` argument, matching `main()`: `MANIFEST` is a fixed path to the
+    real tree's sealed manifest, so hashing an arbitrary root and comparing it
+    against that fixed file would not be a check of that root, only a
+    guaranteed mismatch dressed up as one.
+
+    A missing manifest omits the outcome key entirely, which gauge reads as
+    indeterminate. SPEC §4: a missing manifest reports integrity UNKNOWN and
+    is never filled in later -- that rule binds this manifest as much as the
+    cell's.
+    """
+    current = render()
+    count = len(members())
+    if not MANIFEST.is_file():
+        return {"detail": f"{MANIFEST.name} is absent; the Ring 0 set was never sealed"}
+    on_disk = MANIFEST.read_text(encoding="utf-8")
+    if on_disk != current:
+        return {"outcome": "FAIL",
+                "detail": f"manifest is stale against {count} files on disk"}
+    return {"outcome": "PASS", "detail": f"manifest current: {count} files"}
 
 
 def main(argv: list[str] | None = None) -> int:

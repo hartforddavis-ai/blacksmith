@@ -59,9 +59,8 @@ def _entry(path: Path) -> dict:
     """One manifest row.
 
     Symlinks record their target string and are never followed. Following one
-    would hash whatever it points at, so a symlink swapped to a different target
-    would leave the manifest unchanged — the manifest would be describing the
-    destination while the cell contains the link.
+    would hash the destination, so a symlink retargeted between attestations
+    would leave the manifest unchanged.
 
     Mode is recorded because a chmod is a write. A tree whose read-only bits
     were restored after the fact is not a tree that was never written to.
@@ -139,16 +138,11 @@ def freeze(phase: str, cell_root, scratch_prefixes=(), external_paths=()) -> Att
     entries = _walk(root)
     prefixes = tuple(sorted(str(p) for p in scratch_prefixes))
 
-    # A scratch prefix that matches nothing in the tree is a declaration that
-    # cannot bind, and it is silent: every write the runner makes into the
-    # region it thinks it declared is classified as attested, and the run
-    # reports BYPASSED for doing exactly what it was permitted to do. The
-    # commonest cause is a base mismatch — home-relative prefixes handed to a
-    # root-relative walk — which `cell.attest_args` exists to prevent.
+    # A prefix matching nothing binds to nothing, silently: the runner's own
+    # writes then report BYPASSED. Usually a base mismatch, which
+    # `cell.attest_args` prevents.
     #
-    # Checked at `pre` only. The declaration is made before launch, so `pre` is
-    # where it must bind; enforcing it at `post` would turn a deleted scratch
-    # directory into a crash instead of the delta it is.
+    # Pre only. At post, a deleted scratch directory is a delta, not a crash.
     if phase == "pre":
         unbound = [p for p in prefixes
                    if p not in entries and not any(

@@ -1,21 +1,19 @@
 """Cell — builds and destroys the sterile tree. Ring 0, parent-side.
 
-No security claim is made here. This module constructs a directory tree and
-enumerates what is in it. Whether the occupant of that tree is *contained* is
-not a question this module can answer, and nothing it returns should be read as
-answering it: containment is the UID boundary, and the UID boundary is SPEC §8
-step 0, which is UNKNOWN.
+No security claim is made here. This module builds a directory tree and
+enumerates what is in it. Whether the occupant is *contained* is not a question
+it can answer: containment is the UID boundary, and that is SPEC §8 step 0,
+which is UNKNOWN.
 
-What this module does establish is narrower and worth stating exactly: the tree
-contains what was declared and nothing else, and that fact was measured by
-walking it rather than by trusting the build steps that produced it.
+What it does establish: the tree contains what was declared and nothing else,
+measured by walking it rather than by trusting the build steps that produced it.
 
 Design rules taken from SPEC §2:
 
-  Rule 3, sterility by construction. The cell is built by `mkdir` into empty
-  space and populated only from an explicit declaration. Nothing is ever copied
-  in and then deleted, hidden, renamed, or disabled. There is no suppression
-  step to fail open.
+  Rule 3, sterility by construction. Built by `mkdir` into empty space,
+  populated only from an explicit declaration. Nothing is copied in and then
+  deleted, hidden, renamed or disabled, so there is no suppression step to
+  fail open.
 
   Rule 6, fail closed. Every refusal here raises. A cell that cannot be built
   to specification is not built at a lower specification.
@@ -41,11 +39,12 @@ import stat
 from dataclasses import dataclass, field
 from pathlib import Path
 
+import log as log_mod
+
 # Names the harness may read as context if it finds them. Checked on the cell's
 # ancestor chain, because a sterile HOME does not stop a discovery mechanism
-# that walks upward from cwd. Whether the runner performs such a walk is an
-# assumption, recorded as UNKNOWN in ASSUMPTIONS.md; the check is cheap and the
-# failure it guards against is silent, so it runs regardless.
+# that walks upward from cwd. Whether the runner walks is UNKNOWN in
+# ASSUMPTIONS.md; cheap check, silent failure, so it runs regardless.
 HOST_CONTEXT_NAMES = frozenset({
     "CLAUDE.md", "CLAUDE.local.md", ".claude", ".claude.json", ".mcp.json",
 })
@@ -310,20 +309,24 @@ def attest_args(cell: Cell) -> dict:
     }
 
 
-def require_sterile(cell: Cell) -> dict:
+def require_sterile(cell: Cell, log_path: Path | None = None) -> dict:
     """`census`, but a non-sterile result raises instead of being returned.
 
     Callers that only report sterility give an operator something to weigh.
     SPEC §2 rule 6 says there is nothing to weigh: if the cell is not sterile
     there is no session.
+
+    Both outcomes are recorded before either is returned or raised.
     """
     report = census(cell)
     if not report["sterile"]:
+        log_mod.record("cell.sterility", "FAIL", report, log_path)
         raise CellError(
             "cell is not sterile: "
             f"undeclared={report['undeclared']} "
             f"forbidden={report['forbidden_names']} "
             f"symlinks={report['symlinks']}")
+    log_mod.record("cell.sterility", "PASS", report, log_path)
     return report
 
 
