@@ -130,13 +130,13 @@ VERIFIED n · MISQUOTED n · UNSUPPORTED n · MISSED n
     JOB          JOB_verify_ruling.md         sha256:05a260773679
 ```
 
-Sources, copied verbatim 2026-08-05:
+Sources, copied verbatim 2026-08-06:
 
 ```
     LAW 1        claudes-law 1.md             sha256:4ad0e628893b
     LAW 2        Claudes Law 2.txt            sha256:4a015fd59e40
     LAW 3        Claudes law 3.md             sha256:092cbcdc3702
-    SPEC         SPEC.md                      sha256:34fd027c2954
+    SPEC         SPEC.md                      sha256:c3e1d8be9647
     ASSUMPTIONS  ASSUMPTIONS.md               sha256:e2b50f3b4462
     RULING       BLACKSMITH_REDESIGN.md       sha256:577686d76f9b
 ```
@@ -500,13 +500,23 @@ format was ever specified. Take from it:
 - `evidence.py` — hash-chained append-only ledger → the bundle store
 - `findings.py` — lifecycle discipline, **not** its HMAC as a boundary
 
-## 11. Open rulings
+## 11. Rulings
 
-1. **[SCOTT]** The `assay` name collision (§4).
-2. Precedence `BYPASSED > FAILED > UNKNOWN`. A confirmed failure outranks
-   missing evidence. Only ACTIVE promotes.
-3. **[SCOTT]** Evidence into the cell as a copy, or a read-only mount.
-4. **[SCOTT]** Metered spend, if credentials do not survive the UID switch.
+1. **DECIDED.** The `assay` name collision (§4) — Assay is one algorithm;
+   no rename. Ruled 5 Aug 2026.
+2. **DECIDED.** Precedence `BYPASSED > FAILED > UNKNOWN`. A confirmed
+   failure outranks missing evidence. Only ACTIVE promotes.
+3. **DECIDED.** Evidence into the cell as a copy, not a read-only mount.
+   Ruled 5 Aug 2026, reversed same day: the operating constraint is local
+   execution, and a read-only mount's lifecycle (`hdiutil` image
+   create/attach/detach, cleanup on crash) is real operational complexity
+   against a tampering failure that has not occurred — chmod-based copy
+   has not been demonstrated to be bypassed in this tree. Law 1: no
+   demonstrated F for the larger mechanism. `cell.py` already implements
+   `evidence_mode="copy"`; no construction gap remains here.
+4. **DEFERRED, not open.** Metered spend, if credentials do not survive
+   the UID switch — cannot be ruled before SPEC §8 step 0 runs. Does not
+   block freezing the rest of this document.
 
 ## 12. UNKNOWN, preserved
 
