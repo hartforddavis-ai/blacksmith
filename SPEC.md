@@ -55,7 +55,7 @@ Six rules, binding on every component:
 
 | Ring | Contents | Trust |
 |---|---|---|
-| 0 — TCB | `cell`, `attest`, `launch`, `collect`, `gauge`, `promote` | trusted; parent-side, deterministic, no LLM, no network |
+| 0 — TCB | `cell`, `attest`, `launch`, `gauge`, `promote`, and `log` — which is not a stage; every stage calls it | trusted; parent-side, deterministic, no LLM, no network |
 | 1 — cell | the generator session | untrusted, contained |
 | 2 — output | transcript, artifacts, patches | untrusted until promoted |
 
@@ -75,12 +75,10 @@ All parent-side except the cell's occupant.
   re-hashes after. Freezes a manifest. A missing manifest reports integrity
   UNKNOWN and is never filled in later.
 - **`launch`** — spawns the child as the restricted UID.
-- **`collect`** — deterministic evidence from outside the cell: the `init` tool
-  set, `permission_denials`, hash deltas, exit code. **This is the box the old
-  diagram called Assay.** [SCOTT — the tool named `assay` on disk is a pattern
-  scanner that by design never executes anything. It is not this component.
-  Rename the box or rename the tool; a chain-of-custody system cannot have two
-  things per name.]
+- **`collect`** — **DEAD, ruled §11.5.** Replaced by `log`, below.
+- **`log`** — append-only evidence log, parent-side. Each stage records its own
+  decision at the moment it decides, so there is no separate gathering step and
+  no window in which evidence exists only in memory.
 - **`gauge`** — pure adjudicator. `(bundle, contract, contract_hash)` → exactly
   one of `ACTIVE` / `FAILED` / `UNKNOWN` / `BYPASSED`. No I/O, no clock, no
   randomness, no float. Built.
@@ -99,7 +97,7 @@ All parent-side except the cell's occupant.
 5  GENERATE     child emits artifact + transcript
                 child's claims about its own isolation are DISCARDED
 6  POST-ATTEST  re-hash cell; ANY delta = write capability = BYPASSED
-7  COLLECT      parent-side deterministic evidence only
+7  (dead)       was COLLECT; every stage above records its own decision
 8  GAUGE        pure adjudication -> one of four
 9  PROMOTE      ACTIVE only, verdict re-derived, artifact re-hashed
 10 TEARDOWN     cell destroyed; bundle retained, hashed, mirrored
@@ -118,7 +116,7 @@ a mechanism is a wish.
 | write anything | `--tools "Read,Grep,Glob"` — Bash/Write/Edit genuinely absent | **PROVEN** — `init` reports the resulting set |
 | read the memory store | restricted UID holds no read right on `~/.claude`; kernel `EACCES` | **UNPROVEN** — gated on §8 |
 | see boot memory | sterile `HOME`; files absent, not suppressed | **UNPROVEN** — cheap to test |
-| influence the collector | collector runs in parent, different UID, tree not child-writable | **UNPROVEN** |
+| influence the evidence log | `log` writes outside every declared cell tree | **UNPROVEN** — `log.py`'s own docstring calls this non-declaration, not permission |
 | influence the adjudicator | `gauge` is a pure function in the parent; input is data | **PROVEN** — no I/O path exists |
 | validate itself | `promote` re-derives; supplied verdicts ignored and recorded | **PROVEN** in slice |
 | write verified memory | promotion is parent code; child has no channel to it | Promotion → verified-memory: **DEFERRED / NOT-WIRED** |
@@ -191,6 +189,25 @@ format was ever specified. Take from it:
 4. **DEFERRED, not open.** Metered spend, if credentials do not survive
    the UID switch — cannot be ruled before SPEC §8 step 0 runs. Does not
    block freezing the rest of this document.
+5. **DECIDED.** `collect` is dead; `log` is the evidence. Ruled 6 Aug 2026.
+   `collect` was specified to gather four signals after the run. Two — the
+   `init` tool set and `permission_denials` — belong to a spawned Claude CLI
+   child, which the local-execution pivot removed. The other two, hash deltas
+   and the occupant's result, are already written by `log` at the moment each
+   stage decides, so a later gathering step has nothing left to gather.
+   Law 1: no *new* mechanism is needed to gather what is already recorded.
+
+   **This ruling does not close ASSUMPTIONS #21.** `collect` was named there as
+   the owner of the fix — joining "did the occupant run?" to "was the cell
+   tampered with?" `log` records both, as separate entries a reader can compare;
+   nothing hands gauge the pair. The defect moved to whatever assembles the
+   bundle. It did not close.
+
+   **This ruling removed the last `[SCOTT]` marker from this document** — it
+   sat inside the deleted `collect` bullet and named the `assay` collision,
+   already DECIDED at §11.1 on 5 Aug and never cleared from §4. The removal is
+   correct and is recorded here rather than left to a diff, because a marker
+   vanishing without a record is how this document drifts.
 
 ## 12. UNKNOWN, preserved
 

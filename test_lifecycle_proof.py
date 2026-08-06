@@ -257,8 +257,9 @@ print('WROTE AND REVERTED')
         # path the runner exits non-zero and writes nothing; the integrity
         # check gauge receives is indistinguishable from a clean run.
         #
-        # The fix belongs to `collect` (SPEC §4, §5 step 7), which does not
-        # exist and whose name is [SCOTT] ruling 1. Raised, not patched here.
+        # The fix belongs to whatever assembles the bundle gauge adjudicates.
+        # `collect`, previously named as its owner, was ruled dead 6 Aug
+        # (SPEC §11.5); that ruling moved this defect, it did not close it.
         built = self.build()
         script = self.tmp / "payload.py"
         script.write_text("print('never reached')\n", encoding="utf-8")

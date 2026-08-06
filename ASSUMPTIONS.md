@@ -105,9 +105,12 @@ check supplies evidence.
     Reproduced end-to-end this cycle: a launch that exited non-zero before
     executing anything produced an integrity check indistinguishable from a
     clean run. Nothing in `attest` sees the exit code, and nothing should —
-    joining the launch record to the integrity report is `collect`'s job (SPEC
-    §4, §5 step 7). `collect` does not exist, and its name is [SCOTT] ruling 1,
-    so this cycle raised it and did not patch it. Covered by a test that
+    the join belongs to whatever assembles the bundle gauge adjudicates.
+    `collect`, named here as its owner, was ruled dead 6 Aug (SPEC §11.5);
+    `log` records the occupant's result and the hash comparison as separate
+    entries, which lets a reader see the difference but does not make gauge
+    see it. **This defect is unchanged by that ruling — it moved, it did not
+    close.** Covered by a test that
     asserts the wrong behaviour rather than hiding it. **KNOWN DEFECT,
     unmitigated. Any consumer treating an INTACT attest as evidence a session
     ran is wrong.**

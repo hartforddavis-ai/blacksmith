@@ -19,12 +19,16 @@ Subprocess, not in-process: a failure inside the suite's own import graph
 non-zero exit code to whatever calls `as_check`, not as an exception raised
 in the caller's own process.
 
-No UNKNOWN branch: `python3 -m unittest discover` exits 0 only when every
-discovered test passed, and non-zero otherwise — including exit 5 when
-discovery finds nothing to run. Unittest's own contract already refuses to
-call an empty run a pass, so there is no zero-tests-reported-as-PASS case
-left to guard against separately. A run either succeeds or it doesn't;
-there is no third state to force, matching `store.as_check`'s reasoning.
+No UNKNOWN branch: a run either succeeds or it doesn't, and there is no
+third state to force, matching `store.as_check`'s reasoning.
+
+The exit code alone is not enough. `unittest discover` exits 5 on an empty
+discovery only from Python 3.12; the interpreter this actually runs under
+(`sys.executable`) is 3.9.6 here, which exits 0 and prints "Ran 0 tests".
+An empty tree therefore certified PASS — SPEC §9 step 5's
+missing-evidence-as-pass, inside one of the four checks `contract.json`
+requires. The run count is read back from the runner's own output instead,
+and no tests run is FAIL, per SPEC §2 rule 6.
 
 Bounded: a hung suite is a demonstrated failure, not a hypothetical one --
 this session's own bundle.py bug drove this exact subprocess into a live,
@@ -35,6 +39,7 @@ whatever called `as_check`.
 
 from __future__ import annotations
 
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -42,6 +47,8 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 
 TIMEOUT_SECONDS = 120
+
+RAN = re.compile(r"^Ran (\d+) tests? in ", re.MULTILINE)
 
 
 def as_check(root: Path | None = None) -> dict:
@@ -65,7 +72,12 @@ def as_check(root: Path | None = None) -> dict:
     except subprocess.TimeoutExpired:
         return {"outcome": "FAIL",
                 "detail": f"test suite did not finish within {TIMEOUT_SECONDS}s"}
-    if result.returncode == 0:
-        return {"outcome": "PASS", "detail": "test suite passed"}
-    return {"outcome": "FAIL",
-            "detail": f"test suite failed (exit code {result.returncode})"}
+    if result.returncode != 0:
+        return {"outcome": "FAIL",
+                "detail": f"test suite failed (exit code {result.returncode})"}
+    match = RAN.search(result.stderr)
+    ran = int(match.group(1)) if match else 0
+    if not ran:
+        return {"outcome": "FAIL",
+                "detail": "test suite reported no tests run"}
+    return {"outcome": "PASS", "detail": f"test suite passed ({ran} tests)"}
