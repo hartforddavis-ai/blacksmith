@@ -309,9 +309,16 @@ KILLED BY  Law 2 — Trim, not Accretion. Passed its own suite throughout;
            deleting anneal/ on Scott's ruling left the original pipeline/
            live and tracked, 20 files, untouched.
 CLAUSE     none — Trim, not a Generator Clause failure
-STATUS     Deleted (git rm), uncommitted — Scott's call to commit. Do not
-           revive; the cloud vendor-review legs it depended on stay closed
-           by CONSTRAINTS.md regardless of this entry.
+STATUS     Deleted (git rm). Do not revive.
+           STRUCK 7 Aug 2026, Scott's ruling: this line previously said the
+           cloud vendor-review legs "stay closed by CONSTRAINTS.md". No such
+           file exists and none ever has — no commit in this repo's history
+           adds or removes it. The citation is gone. Nothing governs in
+           writing what may leave this machine, and that is UNRULED, not
+           permitted. The boundary in force is the one written where it is
+           used: offboard/README.md, rule 1.
+           Also corrected: this line said "uncommitted — Scott's call to
+           commit". It was committed 6 Aug in 4fea22c.
 LESSON     A FAILURE_LOG entry recording an action is not the action. The
            6 Aug dossier said "FAILURE_LOG.md entry added" for this
            quarantine and no such entry existed on disk when checked —
