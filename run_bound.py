@@ -69,17 +69,30 @@ def main(job, model):
         out.flush()
         # Nothing arrives until prompt-eval ends, so the first line dates it.
         # The timeout is now per read: a stall between tokens, not a wall clock.
-        with urllib.request.urlopen(req, timeout=1800) as r:
-            for line in r:
-                chunk = json.loads(line)
-                if first is None:
-                    first = time.monotonic() - start
-                    print(f"first token at {first:,.0f}s — prompt-eval done", flush=True)
-                out.write(chunk.get("response", ""))
-                out.flush()
-                chars += len(chunk.get("response", ""))
-                if chunk.get("done"):
-                    final = chunk
+        try:
+            with urllib.request.urlopen(req, timeout=1800) as r:
+                for line in r:
+                    chunk = json.loads(line)
+                    if first is None:
+                        first = time.monotonic() - start
+                        print(f"first token at {first:,.0f}s — prompt-eval done", flush=True)
+                    out.write(chunk.get("response", ""))
+                    out.flush()
+                    chars += len(chunk.get("response", ""))
+                    if chunk.get("done"):
+                        final = chunk
+        except OSError as e:
+            elapsed = time.monotonic() - start
+            out.write(
+                f"\n\n---\n\n"
+                f"STALLED: read failed after {elapsed:,.0f}s "
+                f"(first token: {'never' if first is None else f'{first:,.0f}s'}, "
+                f"{chars:,} chars received)\n"
+                f"error: {e!r}\n"
+            )
+            print(f"STALLED after {elapsed:,.0f}s — wrote partial + verdict to "
+                  f"{dest.relative_to(build_paste.BS)}")
+            return
         out.write(
             f"\n\n---\n\n"
             f"prompt eval: {final.get('prompt_eval_count')} tok in "
