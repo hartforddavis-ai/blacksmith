@@ -27,3 +27,16 @@ One entry per cell that did not return the right answer. Measurements, not desig
 ```
 (empty)
 ```
+
+---
+
+## qwen3.5:9b · 4,000 tok · attempt 1 · 2026-08-07T02:47:28
+- outcome: OK
+- elapsed: 7,392.2s, first token 39.9s
+- markers planted: 8, model said: None
+- reasoning: 242,129 chars, reply: 0 chars
+- reply verbatim:
+
+```
+(empty)
+```
