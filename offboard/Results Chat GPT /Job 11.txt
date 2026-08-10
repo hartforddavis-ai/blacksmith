@@ -1,0 +1,293 @@
+## JOB 11 — published evidence on exact retrieval degradation with longer prompts
+
+Scope checked: papers/benchmark results only.
+Labels used:
+
+* **QUOTED** = directly supported by the paper/benchmark text.
+* **INFERRED** = interpretation from the results.
+
+---
+
+# 1. What is the "lost in the middle" effect?
+
+## QUOTED
+
+The original paper is:
+
+([arXiv][1])
+
+**Liu et al. (2023), "Lost in the Middle: How Language Models Use Long Contexts"**
+
+The paper states that it studies:
+
+> "two tasks that require identifying relevant information in their input contexts: multi-document question answering and key-value retrieval"
+
+and finds:
+
+> "performance can degrade significantly when changing the position of relevant information"
+
+It reports that performance is often highest when relevant information is:
+
+> "at the beginning or end of the input context"
+
+and degrades when information is:
+
+> "in the middle of long contexts"
+
+([arXiv][1])
+
+## Current-model applicability
+
+QUOTED:
+
+The original work tested multiple language models, including models advertised as long-context models at the time. It does not establish that every current model has the same curve.
+
+([arXiv][1])
+
+## Replication / later benchmark evidence
+
+QUOTED:
+
+RULER (2024) expanded evaluation beyond simple needle retrieval. It states:
+
+> "Despite achieving nearly perfect accuracy in the vanilla NIAH test, almost all models exhibit large performance drops as the context length increases."
+
+([arXiv][2])
+
+---
+
+# 2. Benchmarks beyond simple needle-in-a-haystack
+
+## RULER
+
+QUOTED:
+
+([arXiv][2])
+
+RULER adds:
+
+* multiple needles
+* varied task complexity
+* multi-hop tracing
+* aggregation tasks
+
+The paper states:
+
+> "RULER expands upon the vanilla NIAH test to encompass variations with diverse types and quantities of needles."
+
+and:
+
+> "RULER introduces new task categories multi-hop tracing and aggregation"
+
+([arXiv][2])
+
+---
+
+## LongBench
+
+QUOTED:
+
+([ACL Anthology][3])
+
+LongBench evaluates:
+
+* single-document QA
+* multi-document QA
+* summarization
+* few-shot learning
+* synthetic tasks
+* code completion
+
+It contains:
+
+> "21 datasets across 6 task categories"
+
+([ACL Anthology][3])
+
+---
+
+## BABILong
+
+QUOTED:
+
+([arXiv][4])
+
+BABILong evaluates reasoning across distributed facts and includes:
+
+* fact chaining
+* induction
+* deduction
+* counting
+* lists/sets
+
+The paper states:
+
+> "BABILong includes a diverse set of 20 reasoning tasks"
+
+([arXiv][4])
+
+---
+
+# 3. For 9–14B open models: where does exact retrieval fall?
+
+## Evidence found
+
+### RULER results
+
+QUOTED:
+
+RULER reports these approximate results:
+
+| Model                   | Parameters | Context length tested | Result                           |
+| ----------------------- | ---------- | --------------------- | -------------------------------- |
+| GLM4                    | 9B         | 4K–128K               | Effective length reported: 64K   |
+| Qwen3-14B               | 14B        | 4K–128K               | Effective length reported: >128K |
+| Qwen2.5-14B-Instruct-1M | 14B        | 4K–128K               | Effective length reported: >128K |
+
+([GitHub][5])
+
+RULER's table shows declining average scores as context increases. For example:
+
+* Qwen3-14B:
+
+  * 4K: 98.0
+  * 32K: 96.1
+  * 64K: 94.0
+  * 128K: 85.1
+
+([GitHub][5])
+
+* GLM4-9B:
+
+  * 4K: 94.7
+  * 32K: 89.9
+  * 64K: 86.7
+  * 128K: 83.1
+
+([GitHub][5])
+
+## INFERRED
+
+A measurable decline exists in these benchmark results before the maximum advertised context length.
+
+Exact "failure point" is not defined by these papers because they use benchmark thresholds rather than a universal retrieval-failure threshold.
+
+---
+
+# 4. Gap between advertised context window and reliable retrieval
+
+## QUOTED
+
+RULER directly addresses this.
+
+It states:
+
+> "While these models all claim context sizes of 32K tokens or greater, only half of them can maintain satisfactory performance at the length of 32K."
+
+([arXiv][2])
+
+The RULER repository reports:
+
+> "Almost all models fall below the threshold before reaching the claimed context lengths."
+
+([GitHub][5])
+
+Examples:
+
+| Model          | Claimed context | RULER effective length |
+| -------------- | --------------- | ---------------------- |
+| Yi-34B         | 200K            | 32K                    |
+| Phi3-mini      | 128K            | 32K                    |
+| Command-R-plus | 128K            | 32K                    |
+| GLM4 9B        | 1M              | 64K                    |
+
+([GitHub][5])
+
+## Result that would prove this wrong
+
+A measured benchmark result showing:
+
+* a model's advertised context length,
+* independent long-context testing,
+* reliable retrieval maintained across that full length,
+
+would contradict the claim that advertised context commonly exceeds reliable retrieval length.
+
+No such counterexample was located in the sources checked.
+
+Status: **NOT FOUND**
+
+---
+
+# 5. Does counting/enumerating behave like retrieval?
+
+## Evidence found
+
+The assumption that counting is separate is supported by benchmark design.
+
+## QUOTED
+
+Counting-Stars exists specifically for counting-style long-context evaluation.
+
+It describes itself as:
+
+> "a multi-evidence, position-aware, and scalable benchmark"
+
+for evaluating long-context models.
+
+It includes:
+
+> "two counting-based multiple pieces of evidence retrieval sub-tasks"
+
+([arXiv][6])
+
+---
+
+BABILong also includes counting tasks:
+
+> "fact chaining, simple induction, deduction, counting, and handling lists/sets"
+
+([arXiv][4])
+
+---
+
+## NOT FOUND
+
+A paper directly comparing:
+
+* single-needle exact retrieval accuracy versus
+* counting all scattered markers across increasing document lengths
+
+with the same model and controlled length ramp
+
+was **NOT FOUND** in the sources checked.
+
+---
+
+# Items not sourced
+
+| Item                                                                            | Status    |
+| ------------------------------------------------------------------------------- | --------- |
+| Universal token length where exact retrieval fails                              | NOT FOUND |
+| Universal curve for 9–14B models                                                | NOT FOUND |
+| Direct comparison of counting markers vs single retrieval at increasing lengths | NOT FOUND |
+| Proof that all advertised context windows are unusable                          | NOT FOUND |
+
+---
+
+## Evidence boundary
+
+The published evidence supports:
+
+* long-context performance can degrade with length. ([arXiv][1])
+* retrieval-only tests are insufficient. ([arXiv][2])
+* aggregation/counting tasks are separately benchmarked. ([arXiv][4])
+
+It does **not** provide a universal collapse point for exact counting of scattered markers. That part remains **NOT FOUND**.
+
+[1]: https://arxiv.org/abs/2307.03172?utm_source=chatgpt.com "Lost in the Middle: How Language Models Use Long Contexts"
+[2]: https://arxiv.org/abs/2404.06654?utm_source=chatgpt.com "RULER: What's the Real Context Size of Your Long-Context Language Models?"
+[3]: https://aclanthology.org/2024.acl-long.172/?utm_source=chatgpt.com "LongBench: A Bilingual, Multitask Benchmark for Long Context Understanding - ACL Anthology"
+[4]: https://arxiv.org/abs/2406.10149?utm_source=chatgpt.com "BABILong: Testing the Limits of LLMs with Long Context Reasoning-in-a-Haystack"
+[5]: https://github.com/NVIDIA/RULER?utm_source=chatgpt.com "GitHub - NVIDIA/RULER: This repo contains the source code for RULER: What’s the Real Context Size of Your Long-Context Language Models? · GitHub"
+[6]: https://arxiv.org/abs/2403.11802?utm_source=chatgpt.com "Counting-Stars: A Multi-evidence, Position-aware, and Scalable Benchmark for Evaluating Long-Context Large Language Models"

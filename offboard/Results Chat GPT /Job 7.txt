@@ -1,0 +1,242 @@
+## JOB 7 — KV cache q8_0 and long-range recall
+
+## 1. What do `--cache-type-k` and `--cache-type-v` do? What does q8_0 mean?
+
+### QUOTED
+
+`llama.cpp` documentation lists:
+
+> "`--cache-type-k TYPE` — KV cache data type for K"
+> "`--cache-type-v TYPE` — KV cache data type for V"
+> "allowed values are ... q8_0 ..."
+> "(default: f16)"
+> ([Android Git Repositories][1])
+
+Therefore:
+
+* `--cache-type-k q8_0` sets the Key cache storage type to q8_0.
+* `--cache-type-v q8_0` sets the Value cache storage type to q8_0.
+* If neither flag is supplied, the documented default is `f16`.
+  ([Android Git Repositories][1])
+
+### q8_0 meaning
+
+**QUOTED**
+
+A llama.cpp discussion describes q8_0 KV cache as reducing memory:
+
+> "In KV Q8_0, expect a similar PPL as FP16, with a <0.1% PPL bump"
+> ([Reddit][2])
+
+The exact internal encoding definition of `q8_0` in the checked sources was **NOT FOUND**.
+
+---
+
+# 2. Published measurements of q8_0 KV accuracy cost
+
+## Measurement 1 — Qwen2.5-Coder-7B
+
+### QUOTED
+
+A llama.cpp discussion reports:
+
+| Cache     |         Mean PPL |
+| --------- | ---------------: |
+| f16/f16   | 8.3891 ± 0.02016 |
+| q8_0/q8_0 | 8.3934 ± 0.02017 |
+
+Difference:
+
+* ΔPPL = 0.0043
+
+Source reports the test used:
+
+* `llama-perplexity`
+* Qwen2.5-Coder-7B
+* q6_k model
+* 128k GGUF
+  ([GitHub][3])
+
+This is a perplexity measurement, not exact recall.
+
+---
+
+## Measurement 2 — Qwen3.5 27B
+
+### QUOTED
+
+Reported values:
+
+| Cache | Mean PPL |     ΔPPL |
+| ----- | -------: | -------: |
+| BF16  |   6.8653 | baseline |
+| Q8_0  |   6.8650 |  +0.0032 |
+
+([Techstat][4])
+
+This is also perplexity, not retrieval or quotation accuracy.
+
+---
+
+## Measurement 3 — long-context community measurement
+
+### QUOTED
+
+A reported sweep states:
+
+> "`q8_0` is free everywhere (+0.02–0.07%)"
+
+The test was:
+
+* Qwen3-0.6B
+* llama.cpp
+* `--flash-attn on`
+* context lengths swept
+  ([Reddit][5])
+
+This is again perplexity.
+
+---
+
+# 3. Does the cost grow with distance?
+
+## Answer: NOT FOUND for q8_0 exact retrieval.
+
+Evidence found:
+
+* Some measurements examine context length effects.
+* They measure perplexity, not "retrieve a specific early quote exactly."
+
+A community measurement found stronger context-length effects for **q4_0**, not q8_0:
+
+### QUOTED
+
+> "`q4_0` ... climbs 43% from 2K to 8K."
+> ([Reddit][5])
+
+For q8_0 specifically, a published measurement showing:
+
+* early-context vs late-context retrieval,
+* exact-match recall,
+* quotation accuracy,
+
+was **NOT FOUND**.
+
+---
+
+# 4. KV quantisation and verbatim quotation / exact-copy tasks
+
+## Answer: NOT FOUND
+
+I found:
+
+* perplexity measurements;
+* KL divergence measurements;
+* LongBench-style QA;
+* retrieval benchmarks for other KV compression methods.
+
+I did **not** find a q8_0 KV-cache paper or benchmark measuring:
+
+* verbatim quotation,
+* exact source copying,
+* whether generated quotes appear in the supplied text.
+
+Therefore:
+
+**NOT FOUND**
+
+---
+
+# 5. Are K and V equally sensitive?
+
+## Answer: NOT FOUND for q8_0/q8_0 specifically.
+
+Evidence found:
+
+Some work evaluates K and V separately or proposes different precision allocation.
+
+Example:
+
+### QUOTED
+
+KVQuant describes:
+
+> "Per-Channel Key Quantization"
+> and discusses different treatment of Key activations.
+> ([arXiv][6])
+
+However, I did not find a measurement saying:
+
+* K causes X degradation,
+* V causes Y degradation,
+
+for llama.cpp `q8_0` KV cache.
+
+Therefore:
+
+**NOT FOUND**
+
+---
+
+# 6. Does `--flash-attn` change the above?
+
+## Answer: NOT FOUND for interaction with q8_0 recall.
+
+Evidence:
+
+A long-context q8_0 measurement reported using:
+
+> "`--flash-attn on` throughout"
+> ([Reddit][5])
+
+But it did not isolate flash attention as a variable.
+
+No checked source found a comparison:
+
+* q8_0 + flash attention
+* q8_0 without flash attention
+
+for exact recall or quotation.
+
+Therefore:
+
+**NOT FOUND**
+
+---
+
+# Items NOT FOUND
+
+| Question                                           | Result        |
+| -------------------------------------------------- | ------------- |
+| q8_0 effect on verbatim quotation                  | **NOT FOUND** |
+| q8_0 effect on exact-copy tasks                    | **NOT FOUND** |
+| q8_0 early-context vs late-context exact recall    | **NOT FOUND** |
+| K vs V sensitivity measurements for llama.cpp q8_0 | **NOT FOUND** |
+| flash-attn effect on q8_0 recall                   | **NOT FOUND** |
+
+---
+
+# Measurement that would prove the distance claim wrong
+
+Claim being tested:
+
+> Long-range recall is degraded more than nearby recall by q8_0 KV quantisation.
+
+A measurement that would disprove it:
+
+* Same model.
+* Same prompt.
+* Same generation settings.
+* Compare f16 KV vs q8_0 KV.
+* Place identical known strings at different distances from the generation point.
+* Measure exact-match retrieval accuracy.
+* If q8_0 has the same retrieval accuracy at early and late positions as f16, the distance-dependent degradation claim is disproven.
+
+This specific measurement was **NOT FOUND** in the sources checked.
+
+[1]: https://android.googlesource.com/platform/external/ggml-org/llama.cpp/%2B/refs/tags/studio-2026.1.1/tools/cli/README.md?utm_source=chatgpt.com "llama.cpp/tools/cli"
+[2]: https://www.reddit.com/r/LocalLLaMA/comments/1d5ubcu?utm_source=chatgpt.com "Kobold CPP Frankenstein with KV cache Q8_0 enabled is here!"
+[3]: https://github.com/ggml-org/llama.cpp/discussions/5932?utm_source=chatgpt.com "4-bit KV Cache · ggml-org llama.cpp · Discussion #5932 · GitHub"
+[4]: https://techstat.net/qwen3-5-27b-q8-kv-cache-benchmarks-bf16-vs-f16-vs-q8_0/?utm_source=chatgpt.com "Qwen3.5 27B Q8 – KV Cache Benchmarks BF16 vs F16 vs Q8_0 – Techstat"
+[5]: https://www.reddit.com/r/LLMDevs/comments/1vcvho7/i_measured_4bit_kv_cache_perplexity_across/?utm_source=chatgpt.com "I measured 4-bit KV cache perplexity across context length instead of at one point. It bottoms out at 2K and climbs 43% by 8K."
+[6]: https://arxiv.org/abs/2401.18079?utm_source=chatgpt.com "KVQuant: Towards 10 Million Context Length LLM Inference with KV Cache Quantization"

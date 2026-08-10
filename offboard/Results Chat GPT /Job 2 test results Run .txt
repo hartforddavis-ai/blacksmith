@@ -1,0 +1,47 @@
+Received the synthetic packet generator.
+
+## Evidence from provided text
+
+The script defines a test suite:
+
+| Packet | Purpose stated in input         | Markers | Approx size | Special condition                  |
+| ------ | ------------------------------- | ------: | ----------: | ---------------------------------- |
+| a      | baseline — plain prose, control |       8 |    ~500 tok | none                               |
+| b      | different count control         |       5 |    ~500 tok | none                               |
+| f      | instruction collision           |       8 |    ~500 tok | directive filler                   |
+| g      | directive + unterminated fence  |       8 |    ~500 tok | directive filler + open code fence |
+| d      | scale test                      |       8 |  ~2,000 tok | none                               |
+| e      | scale test                      |       8 |  ~8,000 tok | none                               |
+
+The stated counting rule is:
+
+> Count lines consisting only of `[[MARKER number]]`
+
+The supplied decoys are intended not to match that rule:
+
+* `[MARKER 9]`
+* `[[marker 3]]`
+* `[[MARKER]]`
+* `The technician left a MARKER on the enclosure door.`
+
+## Inference
+
+The apparent test variable is not just marker counting. The suite appears designed to compare:
+
+1. Simple prose context.
+2. Different answer counts.
+3. Instruction-heavy context.
+4. Instruction-heavy context with a malformed/unclosed code fence.
+5. Longer context lengths.
+
+However, I cannot verify whether these packets reproduce any real external/local system behavior because no execution results were provided.
+
+## UNKNOWN
+
+* Whether the generated packets were actually created.
+* Whether any model was tested against them.
+* Whether any model failed.
+* Whether the packets match the referenced `ramp.py` task environment.
+* Whether the "real rung" properties described in comments are accurate.
+
+No test result is present in the supplied material.

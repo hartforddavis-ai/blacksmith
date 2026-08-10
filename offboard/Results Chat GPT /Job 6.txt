@@ -1,0 +1,168 @@
+## JOB 6 — Ollama thinking budget / generation limits
+
+Sources checked:
+
+* Ollama API documentation: ([GitHub][1])
+* Ollama Modelfile reference: ([Ollama][2])
+* Ollama Thinking documentation: ([Ollama][3])
+* Ollama source (`routes.go`) result checked: ([GitHub][4])
+
+---
+
+## 1. What is the default value of `num_predict` when not set?
+
+**QUOTED**
+
+Ollama's current Modelfile reference states:
+
+> "`num_predict` | Maximum number of tokens to predict when generating text. (Default: -1, infinite generation)" ([Ollama][2])
+
+**Result:** default documented value = `-1`.
+
+**NOT FOUND:** A checked source-code line showing the literal initialization of `NumPredict` in the current Ollama source.
+
+---
+
+## 2. Does `num_predict` count reasoning/thinking tokens, answer tokens, or both?
+
+**QUOTED**
+
+Ollama documents `num_predict` only as:
+
+> "Maximum number of tokens to predict when generating text." ([Ollama][2])
+
+Ollama's API documentation separately documents thinking output:
+
+> "`think`: (for thinking models) should the model think before responding?" ([GitHub][1])
+
+and:
+
+> "The `message.thinking` ... field contains the reasoning trace while `message.content` ... holds the final answer." ([Ollama][3])
+
+**NOT FOUND**
+
+I did not find a checked Ollama source line that explicitly states whether `num_predict` counts:
+
+* thinking tokens only,
+* answer tokens only,
+* or the sum of both.
+
+**Status:** UNKNOWN.
+
+---
+
+## 3. When `num_predict` is reached, how does the request end? Is there a stop-reason field?
+
+**QUOTED**
+
+The Ollama API examples show completed responses containing:
+
+> `"done": true` ([GitHub][1])
+
+**NOT FOUND**
+
+I did not find an official documentation page that lists the complete set of stop-reason values.
+
+**UNVERIFIED**
+
+A community report shows a response containing:
+
+```json
+"done_reason": "length",
+"done": true
+```
+
+and attributes it to reaching a length limit. This is not an official Ollama source. ([Reddit][5])
+
+**Status:** `done_reason` exists in at least one observed response, but official field/value documentation was NOT FOUND.
+
+---
+
+## 4. Is there a reasoning-specific budget / thinking length parameter?
+
+**QUOTED**
+
+Ollama has a `think` parameter:
+
+> "Set the `think` field on chat or generate requests." ([Ollama][3])
+
+For supported models:
+
+> "Most models accept booleans (`true`/`false`). GPT-OSS instead expects one of `low`, `medium`, or `high` to tune the trace length." ([Ollama][3])
+
+**Result:**
+
+* A general Ollama reasoning budget parameter: **NOT FOUND**
+* A `think` control exists.
+* GPT-OSS has documented thinking levels (`low`, `medium`, `high`). ([Ollama][3])
+
+**NOT FOUND**
+
+The Ollama source/documentation checked did not identify a parameter named:
+
+* `thinking_budget`
+* `max_thinking_length`
+* equivalent general reasoning token ceiling
+
+---
+
+## 5. If generation ends because a limit was reached, is it distinguishable by a client?
+
+**QUOTED**
+
+**NOT FOUND in official documentation.**
+
+**UNVERIFIED**
+
+A non-official observed response contains:
+
+```json
+"done_reason": "length"
+```
+
+([Reddit][5])
+
+If this field is present in the actual client response being used, it would distinguish a length stop from a normal completion.
+
+**Exact field found:** `done_reason`
+**Exact value observed:** `"length"`
+**Verification status:** UNVERIFIED from official source.
+
+---
+
+# Could not source
+
+| Item                                                               | Status    |
+| ------------------------------------------------------------------ | --------- |
+| Source-code line establishing default `num_predict` initialization | NOT FOUND |
+| Whether `num_predict` counts thinking tokens                       | NOT FOUND |
+| Whether `num_predict` counts answer tokens                         | NOT FOUND |
+| Whether `num_predict` counts thinking + answer tokens              | NOT FOUND |
+| Official list of `done_reason` values                              | NOT FOUND |
+| General Ollama thinking budget parameter                           | NOT FOUND |
+
+---
+
+# Observation that would prove Q5 wrong
+
+An Ollama client response from the same endpoint/version showing that a generation stopped due to a limit but contains **no distinguishing field** (for example no `done_reason`, or equivalent stop metadata) would disprove the claim that the client can distinguish limit termination.
+
+---
+
+## Evidence / inference separation
+
+**Evidence:**
+
+* `num_predict` is documented as maximum prediction tokens with default `-1`. ([Ollama][2])
+* Ollama exposes `think` for thinking-capable models. ([Ollama][3])
+* A response field named `done_reason` with value `"length"` was observed by a third party. ([Reddit][5])
+
+**Inference:**
+
+* Whether that field is sufficient for all Ollama versions/endpoints cannot be established from the checked official sources. UNKNOWN.
+
+[1]: https://github.com/ollama/ollama/blob/main/docs/api.md?utm_source=chatgpt.com "ollama/docs/api.md at main · ollama/ollama · GitHub"
+[2]: https://docs.ollama.com/modelfile?utm_source=chatgpt.com "Modelfile Reference - Ollama"
+[3]: https://docs.ollama.com/capabilities/thinking?utm_source=chatgpt.com "Thinking - Ollama"
+[4]: https://github.com/ollama/ollama/blob/main/server/routes.go?utm_source=chatgpt.com "ollama/server/routes.go at main · ollama/ollama · GitHub"
+[5]: https://www.reddit.com/r/ollama/comments/1is4jtg?utm_source=chatgpt.com "API chat endpoint - done_reason: length ?"

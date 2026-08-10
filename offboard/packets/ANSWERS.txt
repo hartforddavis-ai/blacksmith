@@ -2,8 +2,9 @@ GROUND TRUTH — do not open until every model has replied.
 Counted by exact line match, not by eye. Re-check any time with:
     grep -c -E '^\[\[MARKER [0-9]+\]\]$' packet_a.txt
 
-packet_a.txt   COUNT:  8   ( 2,421 chars, ~500 tok, 0 decoys)
-packet_b.txt   COUNT:  5   ( 2,382 chars, ~500 tok, 0 decoys)
-packet_c.txt   COUNT: 11   ( 2,497 chars, ~500 tok, 3 decoys)
-packet_d.txt   COUNT:  8   ( 8,411 chars, ~2,000 tok, 0 decoys)
-packet_e.txt   COUNT:  8   (32,417 chars, ~8,000 tok, 0 decoys)
+packet_a.txt   COUNT:  8   ( 2,421 chars, ~500 tok, 0 fences)   baseline — plain prose, the control
+packet_b.txt   COUNT:  5   ( 2,382 chars, ~500 tok, 0 fences)   different count — catches a repeated answer
+packet_f.txt   COUNT:  8   ( 2,373 chars, ~500 tok, 10 fences)   DIRECTIVE filler — instruction collision
+packet_g.txt   COUNT:  8   ( 2,418 chars, ~500 tok, 11 fences, ODD)   directive + unterminated fence — the 500 rung's defect
+packet_d.txt   COUNT:  8   ( 8,411 chars, ~2,000 tok, 0 fences)   scale, prose
+packet_e.txt   COUNT:  8   (32,417 chars, ~8,000 tok, 0 fences)   scale, prose

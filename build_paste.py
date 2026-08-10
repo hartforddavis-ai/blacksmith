@@ -32,6 +32,14 @@ SOURCES = LAW_FILES + [
     ("RULING", RULING),
 ]
 
+# Calibration payloads. One invented page instead of six real documents, so the
+# answer to every claim is known before the run and a wrong result cannot be
+# blamed on size — the whole paste is under 5 KB, well inside any context these
+# models have. `verify` and `evaluate` are the instrument in use; these three
+# are the instrument being measured, and they exist because the pipeline has
+# never been run end to end on a payload whose answer was known in advance.
+CALIB = [("UNIT7", BS / "calib/SOURCE_unit7.md")]
+
 JOBS = {
     "verify": {
         "job": BS / "JOB_verify_ruling.md",
@@ -42,6 +50,25 @@ JOBS = {
         "job": BS / "JOB_evaluate_redesign.md",
         "sources": SOURCES,
         "out": BS / "PROMPT_EVALUATE_PASTE.md",
+    },
+    # Positive control: three claims the source states outright.
+    "calib_true": {
+        "job": BS / "calib/JOB_calib_true.md",
+        "sources": CALIB,
+        "out": BS / "calib/PASTE_calib_true.md",
+    },
+    # Negative control, and the one with teeth: three claims the source
+    # contradicts. A pipeline that passes everything passes calib_true too.
+    "calib_false": {
+        "job": BS / "calib/JOB_calib_false.md",
+        "sources": CALIB,
+        "out": BS / "calib/PASTE_calib_false.md",
+    },
+    # Live case: three claims that are true, and that no single line states.
+    "calib_reason": {
+        "job": BS / "calib/JOB_calib_reason.md",
+        "sources": CALIB,
+        "out": BS / "calib/PASTE_calib_reason.md",
     },
 }
 

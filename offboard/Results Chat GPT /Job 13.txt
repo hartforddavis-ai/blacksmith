@@ -1,0 +1,135 @@
+## JOB 13 result (partial)
+
+### Question 1
+
+**“With temperature 0 and a fixed seed, is llama.cpp inference bit-identical across repeated runs on the same machine and same build?”**
+
+### Evidence found
+
+**QUOTED**
+
+From llama.cpp issue #7052:
+
+> “I therefore set the temperature to 0 and disable other samplers. When closely inspecting the returned completions and logits across multiple runs, I realised that they are, however, not deterministic.” ([GitHub][1])
+
+The same report states:
+
+> “When using a single slot, I always get the same answer, but still small variations in the logits.” ([GitHub][1])
+
+The report also states the environment included Mac hardware:
+
+> “I experienced this behavior on my MacBook Pro M1, as well as on an H100 and an A100.” ([GitHub][1])
+
+### Assessment against the question
+
+**BIT-IDENTICAL GUARANTEE:** NOT FOUND
+
+I did not find a llama.cpp source statement guaranteeing that:
+
+* same machine,
+* same build,
+* same model,
+* temperature 0,
+* fixed seed
+
+will always produce bit-identical output.
+
+**DEMONSTRATED:** PARTIAL
+
+A reproducible case is documented in issue #7052 where temperature 0 was used and non-determinism was observed in a multi-slot server setup. ([GitHub][1])
+
+This does **not** prove that every single-slot local run on every build is non-identical.
+
+---
+
+## Local experiment named
+
+**Found: YES**
+
+The simplest settling experiment is:
+
+1. Run the exact same request repeatedly.
+2. Keep:
+
+   * model file,
+   * build,
+   * machine,
+   * parameters,
+   * prompt
+     identical.
+3. Compare generated output bytes and/or returned tokens.
+
+If all repeated outputs match, that machine/build combination demonstrates reproducibility for that test case.
+
+If outputs differ, that demonstrates a failure of reproducibility for that configuration.
+
+This experiment is the direct test; documentation alone does not settle the local machine case.
+
+---
+
+## Other requested items
+
+### Batch size / threads / GPU backend
+
+**QUOTED**
+
+Issue #7052 reports:
+
+> “It spawns a llama.cpp server with 8 slots, and sends the same prompt to each slot using multiple threads.” ([GitHub][1])
+
+It also reports:
+
+> “When running the script multiple times, I get between 5 and 8 unique completion texts when using 8 slots.” ([GitHub][1])
+
+This is evidence for a multi-slot/threaded case.
+
+**NOT FOUND:** A source proving that changing only batch size or thread count always changes output.
+
+---
+
+### Apple Metal specifically
+
+**FOUND**
+
+Issue #7052 includes:
+
+> “I experienced this behavior on my MacBook Pro M1…” ([GitHub][1])
+
+This is evidence of a Mac Apple Silicon report.
+
+**NOT FOUND:** A source proving Metal itself is the cause.
+
+---
+
+### Ollama default seed
+
+**NOT FOUND**
+
+I did not locate a checked source for whether Ollama passes a seed by default or what exact seed behavior occurs when omitted.
+
+---
+
+### Open llama.cpp / Ollama reproducibility issues
+
+**FOUND**
+
+* llama.cpp issue #7052: non-deterministic output in multi-slot server use. ([GitHub][1])
+
+**NOT FOUND**
+
+* A checked Ollama issue specifically proving the same condition.
+* A general llama.cpp guarantee of bit-identical inference under all fixed conditions.
+
+---
+
+## Bottom line for Question 1
+
+**Answer: NOT GUARANTEED by the evidence found.**
+
+**Demonstrated:** some llama.cpp configurations can produce non-identical results even at temperature 0. ([GitHub][1])
+
+**Not demonstrated:** that a single fixed local configuration will fail reproducibility.
+
+The local repeated-run byte comparison experiment is the deciding test for the actual machine.
+
+[1]: https://github.com/ggml-org/llama.cpp/issues/7052?utm_source=chatgpt.com "Non-deterministic output of the llama.cpp server when using multiple slots · Issue #7052 · ggml-org/llama.cpp · GitHub"

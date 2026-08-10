@@ -1,0 +1,213 @@
+## Evidence status
+
+I checked published papers/benchmarks. I found evidence for **source-grounded generation and attribution failures**, but I did **not** find a published benchmark that exactly matches:
+
+> “A ~9–12B parameter model is given a document in the prompt, then asked to certify whether a supplied quotation appears verbatim in that document.”
+
+Therefore the exact question is:
+
+**NOT FOUND** — exact benchmark for verbatim quote-presence certification by 9–12B models.
+
+The closest published evidence is below.
+
+---
+
+# 1. Benchmarks measuring attribution / grounding against supplied sources
+
+## AIS — Attributable to Identified Sources
+
+**QUOTED**
+
+> “assessing whether NLG output only contains information about the external world that is verifiable in source documents” ([Google Research][1])
+
+Benchmark/source:
+
+[Measuring Attribution in Natural Language Generation Models](https://research.google/pubs/measuring-attribution-in-natural-language-generation-models/?utm_source=chatgpt.com)
+
+Measures whether generated claims are supported by an identified source. It is not specifically verbatim quote matching. ([Google Research][1])
+
+---
+
+## RAGTruth
+
+**QUOTED**
+
+> “a hallucination corpus for developing trustworthy retrieval-augmented language models” ([ACL Anthology][2])
+
+It contains:
+
+* nearly 18,000 generated responses
+* source documents
+* human annotations of hallucinated spans ([ACL Anthology][2])
+
+Benchmark/source:
+
+[RAGTruth ACL Anthology paper](https://aclanthology.org/2024.acl-long.585/?utm_source=chatgpt.com)
+
+It measures unsupported claims against retrieved context, not exact quotation verification.
+
+---
+
+## KaLMA
+
+**QUOTED**
+
+> “a benchmark for Knowledge-aware Language Model Attribution” ([ACL Anthology][3])
+
+It evaluates whether model outputs can be attributed to supporting knowledge sources. ([ACL Anthology][3])
+
+---
+
+# 2. Error rates for open models under ~15B parameters
+
+## RAGTruth reported model results
+
+RAGTruth includes open models including:
+
+* Llama-2-7B-chat
+* Llama-2-13B-chat
+* Mistral-7B-Instruct
+
+The dataset reports hallucination counts:
+
+| Model               | Hallucination responses |
+| ------------------- | ----------------------: |
+| Llama-2-7B-chat     |                   1,832 |
+| Llama-2-13B-chat    |                   1,677 |
+| Mistral-7B-Instruct |                   1,953 |
+
+Source: RAGTruth dataset statistics. ([GitHub][4])
+
+Calculated response-level rates are **not directly reported in the paper excerpt I checked**.
+Using the published total of 2,965 evaluated source/task instances and the listed model response counts would require assumptions about the exact denominator per model.
+
+Therefore:
+
+* exact percentage error rates for these models: **NOT FOUND**
+* raw hallucination counts: **QUOTED** ([GitHub][4])
+
+---
+
+# 3. Fabricated verbatim quotations attributed to supplied sources
+
+## Published evidence found
+
+There is strong evidence that models produce unsupported source-attributed text.
+
+RAGTruth:
+
+**QUOTED**
+
+> “LLMs may still present unsupported or contradictory claims to the retrieved contents.” ([arXiv][5])
+
+AIS:
+
+**QUOTED**
+
+> “model outputs include hallucinated or incorrect information” ([GitHub][6])
+
+However:
+
+A benchmark specifically measuring:
+
+> “model invents a quotation mark-delimited sentence and claims it appears in the supplied document”
+
+was:
+
+**NOT FOUND**
+
+---
+
+## Does document length change the rate?
+
+**NOT FOUND**
+
+I did not find a checked source reporting fabricated verbatim quote rates as a function of supplied-document length.
+
+---
+
+# 4. Model citation verification versus simple string search
+
+Question:
+
+> Does a model verifying citations perform better or worse than simple string search?
+
+**NOT FOUND**
+
+I found papers evaluating model-based attribution and hallucination detection, but not a controlled comparison:
+
+* LLM verifier
+* versus exact string search
+* on verbatim quote existence
+
+The closest evidence is that deterministic source checking is treated as a separate mechanism in attribution research, but the requested comparison was not located. ([Google Research][1])
+
+---
+
+# 5. Structured verdict output versus free text
+
+Question:
+
+> Does outputting verified / unsupported / misquoted change error rate?
+
+**NOT FOUND**
+
+I found benchmarks using structured labels:
+
+* AIS uses annotation categories. ([Google Research][1])
+* FactBench/VERIFY uses categories such as supported, unsupported, undecidable. ([ACL Anthology][7])
+
+But I did not find a published controlled comparison:
+
+* free-form answer
+* versus structured verdict schema
+
+for quote verification accuracy.
+
+---
+
+# What could not be sourced
+
+| Claim requested                                                             | Status    |
+| --------------------------------------------------------------------------- | --------- |
+| Exact benchmark for 9–12B models verifying verbatim quotes in supplied text | NOT FOUND |
+| Error rates for sub-15B models on that exact task                           | NOT FOUND |
+| Fabricated quote rate from supplied documents                               | NOT FOUND |
+| Quote hallucination rate versus document length                             | NOT FOUND |
+| LLM verifier versus string search comparison                                | NOT FOUND |
+| Structured verdict versus free text comparison                              | NOT FOUND |
+
+---
+
+# Final question
+
+> Does published evidence support or contradict the idea that a sub-15B model can do this reliably?
+
+**Evidence-supported answer:**
+
+The published evidence **does not establish reliable performance** for that exact task.
+
+What is supported:
+
+* Models can produce unsupported claims even when given source material. ([arXiv][5])
+* Attribution/grounding is a recognized failure area requiring dedicated evaluation. ([Google Research][1])
+* Smaller open models show substantial hallucination counts in source-grounded generation benchmarks. ([GitHub][4])
+
+What is **not established**:
+
+* that a 9–12B model cannot verify verbatim quotes reliably;
+* the exact failure rate for that task.
+
+Final classification:
+
+**UNVERIFIED** — “a sub-15B model cannot reliably verify quotes.”
+
+**SUPPORTED** — “source-grounded verification is a known failure area for language models, and reliability must be measured rather than assumed.” ([Google Research][1])
+
+[1]: https://research.google/pubs/measuring-attribution-in-natural-language-generation-models/?utm_source=chatgpt.com "Measuring Attribution in Natural Language Generation Models"
+[2]: https://aclanthology.org/2024.acl-long.585/?utm_source=chatgpt.com "RAGTruth: A Hallucination Corpus for Developing Trustworthy Retrieval-Augmented Language Models - ACL Anthology"
+[3]: https://aclanthology.org/2024.findings-acl.28/?utm_source=chatgpt.com "Towards Verifiable Generation: A Benchmark for Knowledge-aware Language Model Attribution - ACL Anthology"
+[4]: https://github.com/ParticleMedia/RAGTruth?utm_source=chatgpt.com "GitHub - ParticleMedia/RAGTruth: Github repository for \"RAGTruth: A Hallucination Corpus for Developing Trustworthy Retrieval-Augmented Language Models\" · GitHub"
+[5]: https://arxiv.org/abs/2401.00396?utm_source=chatgpt.com "RAGTruth: A Hallucination Corpus for Developing Trustworthy Retrieval-Augmented Language Models"
+[6]: https://github.com/google-research-datasets/AIS?utm_source=chatgpt.com "GitHub - google-research-datasets/AIS: AIS is an evaluation framework for assessing whether the output of natural language models only contains information about the external world that is verifiable in source documents, or \"Attributable to Identified Sources\". · GitHub"
+[7]: https://aclanthology.org/2025.acl-long.1587/?utm_source=chatgpt.com "FactBench: A Dynamic Benchmark for In-the-Wild Language Model Factuality Evaluation - ACL Anthology"

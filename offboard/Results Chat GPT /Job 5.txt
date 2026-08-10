@@ -1,0 +1,53 @@
+## Search result
+
+**Result: matching reports were found.**
+I found related issues, but not every requested condition matched exactly.
+
+### Exact / close matches
+
+| Issue                                                                                                                                     | Status                            | Version reported                          | Maintainer explanation / fix                                                                                                                                                                        |
+| ----------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------- | ----------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ([GitHub][1]) **ollama/ollama #10976 — “Thinking + tools + qwen3 = empty output”**                                                        | Open                              | NOT FOUND in retrieved issue text         | Report describes `think=true` + tools producing empty output. The retrieved text does not include a maintainer fix or release. ([GitHub][1])                                                        |
+| ([GitHub][2]) **ollama/ollama #15288 — “/v1/chat/completions returns empty content with all text in reasoning field”**                    | NOT CONFIRMED from retrieved text | Ollama 0.20.0                             | Report says thinking output was placed in `reasoning` while `content` was empty. It references Qwen3-related empty-output issues, including #10976, but this issue itself is Gemma 4. ([GitHub][2]) |
+| ([GitHub][3]) **ollama/ollama #14493 — “Qwen 3.5 27B: Tool calling completely non-functional and repetition penalties silently ignored”** | Status not fully extracted        | Ollama v0.17.1 through master (`79917cf`) | Report includes Qwen3.5 thinking/parser issues, including unclosed `</think>` handling. Retrieved text does not provide a final release fix. ([GitHub][3])                                          |
+
+### Reports related to “never exits thinking” / end-of-thinking token
+
+| Issue                                                  | Finding                                                                                                                                                                                                           |
+| ------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ([GitHub][4]) **ggml-org/llama.cpp #20260**            | Related Qwen3.5 issue. A maintainer comment discusses a case where the `</think>` tag was not generated, affecting parsing. It is not the exact “empty final response after long reasoning” report. ([GitHub][4]) |
+| ([GitHub][5]) **ggml-org/llama.cpp Discussion #21445** | Discussion mentions Qwen3.5 models “overthink” and possible reasoning-budget control. It is not a bug report matching the exact symptom. ([GitHub][5])                                                            |
+
+### Reports of reasoning exhausting context / long reasoning
+
+Found related discussion, but no exact GitHub issue matching:
+
+> “reasoning tokens are present, content field empty, request completes normally”
+
+with:
+
+* Qwen3/Qwen3.5
+* Ollama
+* `/api/generate`
+* no tools required
+
+**Status:** NOT FOUND in the searched results.
+
+### Fixed version?
+
+**NOT FOUND.**
+
+I found reports and related parser/output-boundary issues, but no verified maintainer statement giving:
+
+* “this exact empty-content/non-empty-reasoning failure”
+* fixed in version X
+
+Therefore the result is:
+
+**Known related bugs exist. A confirmed fix for the exact reported behaviour was NOT FOUND.**
+
+[1]: https://github.com/ollama/ollama/issues/10976?utm_source=chatgpt.com "Thinking + tools + qwen3 = empty output · Issue #10976 · ollama/ollama · GitHub"
+[2]: https://github.com/ollama/ollama/issues/15288?utm_source=chatgpt.com "Gemma 4: /v1/chat/completions returns empty content with all text in reasoning field — no think=false support on OpenAI endpoint · Issue #15288 · ollama/ollama"
+[3]: https://github.com/ollama/ollama/issues/14493?utm_source=chatgpt.com "Qwen 3.5 27B: Tool calling completely non-functional and repetition penalties silently ignored · Issue #14493 · ollama/ollama"
+[4]: https://github.com/ggml-org/llama.cpp/issues/20260?utm_source=chatgpt.com "Eval bug: unsloth/Qwen3.5-35B-A3B-GGUF `peg-native` chat format parser fails when model outputs text before `<tool_call>` (thinking model + tool calling) · Issue #20260 · ggml-org/llama.cpp"
+[5]: https://github.com/ggml-org/llama.cpp/discussions/21445?utm_source=chatgpt.com "Dynamically adjusting `reasoning-budget` per chat prediction in llama.cpp server · ggml-org llama.cpp · Discussion #21445 · GitHub"

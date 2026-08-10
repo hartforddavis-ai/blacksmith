@@ -63,12 +63,16 @@ line in.
 
 ### Day 1 — is the instrument even sound?
 
-**`JOB_2_packet_test.md`** — packets a, b, c.
+**`JOB_2_packet_test.md`** — packets a, b, f, g.
 The only job here that produces a measurement rather than a fact, and the only
-one that cannot be done on our own machine at any price. It asks whether the
-counting task is well-formed, or whether the local models are simply failing
-something that is broken to begin with. Do this first even if nothing else gets
-done. Turn chat memory off before you start — the file explains why.
+one that cannot be done on our own machine at any price. **Rebuilt 7 Aug** after
+the ramp showed the fault is probably the test: the real packets are cut from
+Blacksmith's own KERNEL and SPEC, so the model is handed twenty-odd directive
+blocks and then asked to obey the last one. The four packets now move one
+variable at a time — plain prose, a count control, directive filler, and
+directive filler with the unterminated code fence the failing rung actually has.
+Do this first even if nothing else gets done. Turn chat memory off before you
+start.
 
 **`JOB_3_sampling_params.md`** — the cheapest explanation on the table.
 A sampling penalty left in force by the model's own config may be actively
@@ -138,11 +142,17 @@ tell us the difference between a bad model and a bad question.
 
 Run 6 Aug, per part, so you know what to drop when time runs short.
 
-- **Earned** — Job 2 (packets a and b), Job 3, Job 4, Job 5, Job 10, Job 11,
-  Job 12. Each closes something that has actually failed here.
-- **Not earned, kept anyway** — packet c, packets d and e, Job 8, Job 13.
-  These answer questions where nothing has gone wrong yet. That is a forecast,
-  not a failure, and the log has an entry about the cost of confusing the two.
+- **Earned** — Job 2 (packets a, b, f and g), Job 3, Job 4, Job 5, Job 10,
+  Job 11, Job 12. Each closes something that has actually failed here. Packets
+  f and g were added 7 Aug against a failure read off the bytes: the instrument's
+  own packets carry 16-21 directive blocks and an odd code fence at the rung
+  that fails.
+- **Cut 7 Aug** — packet c, the near-miss decoys. Rejected on LEAN when it was
+  written, and f and g are earned where it was not. Removing it keeps the suite
+  the same size.
+- **Not earned, kept anyway** — packets d and e, Job 8, Job 13. These answer
+  questions where nothing has gone wrong yet. That is a forecast, not a failure,
+  and the log has an entry about the cost of confusing the two.
 - **Elaboration fired.** The demonstrated failures are closed by about half of
   this folder. The other half exists because a four-day budget was set, which
   is a legitimate reason to keep it and not a reason to pretend it was earned.

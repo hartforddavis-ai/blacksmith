@@ -1,0 +1,185 @@
+## Result
+
+Evidence checked: papers / model documentation only.
+Claims below are marked **QUOTED** or **INFERRED**.
+
+---
+
+## 1. Advertised long context vs measured performance
+
+### Evidence: RULER benchmark
+
+**QUOTED**
+
+> “RULER: What’s the Real Context Size of Your Long-Context Language Models?”
+
+The paper states:
+
+> “Despite achieving nearly perfect accuracy in the vanilla NIAH test, almost all models exhibit large performance drops as the context length increases.”
+
+It also reports:
+
+> “only half of them can maintain satisfactory performance at the length of 32K.”
+
+Source: ([arXiv][1])
+
+**INFERRED**
+
+A published context-window number is not by itself evidence that the model maintains the same task performance throughout that window.
+
+---
+
+### Evidence: Lost in the Middle
+
+**QUOTED**
+
+The paper states:
+
+> “performance can degrade significantly when changing the position of relevant information”
+
+and:
+
+> “performance is often highest when relevant information occurs at the beginning or end of the input context, and significantly degrades when models must access relevant information in the middle of long contexts”
+
+Source: ([ACL Anthology][2])
+
+**INFERRED**
+
+Long-context capability has measurable failure modes even for models advertised as long-context models.
+
+---
+
+## 2. Benchmarks designed to expose advertised vs effective context
+
+### RULER
+
+**QUOTED**
+
+RULER describes itself as:
+
+> “What’s the Real Context Size of Your Long-Context Language Models”
+
+and evaluates:
+
+> “17 open-source models across 4 task categories (in total 13 tasks)”
+
+Source: ([GitHub][3])
+
+### Lost in the Middle
+
+**QUOTED**
+
+The paper evaluates:
+
+> “multi-document question answering and key-value retrieval”
+
+Source: ([ACL Anthology][2])
+
+---
+
+## 3. Techniques extending advertised windows after training
+
+### Evidence found
+
+**QUOTED**
+
+A paper on effective context length states:
+
+> “recent work reveals that the effective context lengths of open-source LLMs often fall short, typically not exceeding half of their training lengths.”
+
+It discusses a method called STRING and reports improved benchmark performance for some models.
+
+Source: ([arXiv][4])
+
+**INFERRED**
+
+Published work exists showing that extending or modifying positional handling can change long-context performance.
+
+---
+
+## 4. Does allocating a larger context window than needed reduce output quality?
+
+### Evidence found
+
+**NOT FOUND**
+
+I did not find a checked paper or benchmark in the sources examined that isolates:
+
+* identical model,
+* identical prompt,
+* identical required input,
+* only `allocated context size` changed,
+* output quality measured independently of memory/runtime effects.
+
+### Status
+
+**UNKNOWN**
+
+The evidence checked does not answer whether a larger allocated window alone harms output quality.
+
+The claim that it harms quality is therefore **UNVERIFIED** from the checked sources.
+
+---
+
+## 5. Qwen and Gemma families specifically
+
+### Gemma
+
+**QUOTED**
+
+The Gemma model documentation lists:
+
+> “Long Context — Context windows of up to 128K tokens … and 256K tokens …”
+
+It also includes a long-context benchmark entry:
+
+> “MRCR v2 8 needle 128k”
+
+with reported results for Gemma variants.
+
+Source: ([Google AI for Developers][5])
+
+**INFERRED**
+
+Gemma documentation provides advertised windows and at least one long-context benchmark result, but it does not by itself define a general “usable context length.”
+
+---
+
+### Qwen
+
+**NOT FOUND**
+
+I did not locate a checked Qwen 3.x primary source in the retrieved material that directly answers effective context length versus advertised context length.
+
+---
+
+# Missing evidence
+
+* A universal conversion from advertised context length → usable context length: **NOT FOUND**
+* A measurement showing that increasing allocated context size alone reduces answer quality: **NOT FOUND**
+* A Qwen 3.x primary-source effective-context study: **NOT FOUND**
+
+---
+
+# Question 4 verdict
+
+**Evidence-based answer: NO (from checked sources).**
+
+The specific claim:
+
+> “Allocating a larger context window than the prompt needs reduces output quality”
+
+is **not answered by the evidence found**.
+
+Current checked evidence supports:
+
+* long advertised windows can have degraded retrieval/task performance at long lengths;
+* effective context can be smaller than advertised.
+
+It does **not** establish that unused allocated context capacity itself damages output quality. ([arXiv][1])
+
+[1]: https://arxiv.org/abs/2404.06654?utm_source=chatgpt.com "RULER: What's the Real Context Size of Your Long-Context Language Models?"
+[2]: https://aclanthology.org/2024.tacl-1.9/?utm_source=chatgpt.com "Lost in the Middle: How Language Models Use Long Contexts - ACL Anthology"
+[3]: https://github.com/NVIDIA/RULER?utm_source=chatgpt.com "GitHub - NVIDIA/RULER: This repo contains the source code for RULER: What’s the Real Context Size of Your Long-Context Language Models? · GitHub"
+[4]: https://arxiv.org/abs/2410.18745?utm_source=chatgpt.com "Why Does the Effective Context Length of LLMs Fall Short?"
+[5]: https://ai.google.dev/gemma/docs/core/model_card_4?utm_source=chatgpt.com "Gemma 4 model card  |  Google AI for Developers"

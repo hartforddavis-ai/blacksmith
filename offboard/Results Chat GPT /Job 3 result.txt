@@ -1,0 +1,150 @@
+## JOB 3 — Sampling parameter hypothesis check
+
+Sources used: official Ollama docs and llama.cpp documentation only. 
+
+---
+
+# 1. Does `presence_penalty` affect temperature 0 / greedy decoding?
+
+**Status: NOT FOUND**
+
+**QUOTED**
+
+llama.cpp documents that penalties are part of the sampler sequence:
+
+> `--samplers SAMPLERS`  
+> "samplers that will be used for generation in the order..."  
+> Default includes:
+> `penalties; ... temperature`   
+
+**INFERRED**
+
+Because penalties appear before temperature in the sampler sequence, this suggests penalties modify logits before later sampling decisions.
+
+However:
+
+**NOT FOUND**
+- Exact current source line proving whether `temperature=0` still executes the penalties stage.
+- Exact greedy-path branch showing whether penalties are skipped.
+
+---
+
+# 2. Does `presence_penalty` apply to EOS / special tokens / thinking markers?
+
+## Answer: **NOT FOUND**
+
+I could not find official documentation or source evidence stating that EOS, end-of-turn, or thinking-block tokens are:
+
+- exempt from presence penalty, or
+- penalised normally.
+
+**NOT FOUND**
+- Special-token exemption rule.
+- EOS handling inside the presence penalty implementation.
+
+The observation that would prove the hypothesis wrong:
+
+> A llama.cpp trace showing the EOS token is excluded from the penalty calculation or receives no penalty adjustment.
+
+That would kill the "presence penalty suppresses the stop token" hypothesis.
+
+Current status:
+
+**ACTIVE HYPOTHESIS — UNRESOLVED**
+
+---
+
+# 3. Ollama partial `options`: are Modelfile parameters retained?
+
+## Answer: **YES**
+
+**QUOTED**
+
+Ollama API documentation:
+
+> "`options`: additional model parameters listed in the documentation for the Modelfile such as `temperature`"   
+
+Ollama Modelfile documentation:
+
+> "`PARAMETER` instruction defines a parameter that can be set when Ollama will run the model."   
+
+**INFERRED**
+
+A request supplying only:
+
+```json
+{
+  "options": {
+    "temperature": 0
+  }
+}
+```
+
+overrides temperature only. Parameters not supplied remain from the model configuration.
+
+Therefore:
+
+## Plain answer: YES — `presence_penalty 1.5` remains active.
+
+---
+
+# 4. Accepted range for `presence_penalty`; is 1.5 high?
+
+**Status: PARTIAL**
+
+**QUOTED**
+
+llama.cpp:
+
+> "`--presence-penalty N` repeat alpha presence penalty (default: 0.0, 0.0 = disabled)"   
+
+Ollama API examples show:
+
+```json
+"presence_penalty": 1.5
+```
+
+as an accepted parameter value. 
+
+**NOT FOUND**
+
+- Official minimum/maximum range.
+- Official statement that 1.5 is "high".
+
+---
+
+# 5. Documented interaction between presence penalty and failure to emit stop token?
+
+**Status: NOT FOUND**
+
+No official documentation found stating:
+
+> presence penalty can cause a model to fail to emit EOS/stop tokens.
+
+---
+
+# Final evidence table
+
+| Question | Result |
+|-|-|
+| Q1: penalties before greedy argmax? | NOT FOUND |
+| Q2: EOS/special tokens exempt? | **NOT FOUND** |
+| Q3: partial Ollama options preserve Modelfile params? | **YES** |
+| Q4: range / "1.5 high"? | NOT FOUND |
+| Q5: penalty causes stop failure? | NOT FOUND |
+
+---
+
+## Plain answers requested
+
+**Q2:** NOT FOUND.  
+Cannot promote or kill the hypothesis.
+
+**Q3:** YES.  
+The premise that `presence_penalty 1.5` has been active is supported. 
+
+Current state:
+
+- "The parameter is active" → **supported**
+- "It is suppressing the stop token" → **unproven**  
+- Missing decisive evidence → **special-token handling in llama.cpp source**.

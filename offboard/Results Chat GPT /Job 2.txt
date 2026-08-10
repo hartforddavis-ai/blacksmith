@@ -1,0 +1,70 @@
+Received.
+
+Status: **INPUT RECEIVED — NOT EXECUTED**
+
+Observed:
+
+* The message contains Python source intended to generate synthetic test packets.
+* It includes:
+
+  * packet generation logic,
+  * task wording,
+  * stated packet purposes,
+  * ground-truth generation instructions.
+* No generated packet files were provided.
+* No model runs or platform responses were provided.
+
+Not performed:
+
+* No packets generated.
+* No `ANSWERS.txt` opened or reconstructed.
+* No counting performed.
+* No model/platform evaluation performed.
+
+Evidence available in this chat:
+
+* The source code text itself.
+* The stated intent/comments inside that source.
+
+Evidence not available:
+
+* Actual generated `packet_a.txt`, `packet_b.txt`, `packet_f.txt`, `packet_g.txt`.
+* Exact generated marker counts.
+* Any platform replies.
+
+Current result: **UNKNOWN** for the Job 2 measurement.
+Received.
+
+Status: **INPUT RECEIVED — NOT EXECUTED**
+
+Observed:
+
+* The message contains Python source intended to generate synthetic test packets.
+* It includes:
+
+  * packet generation logic,
+  * task wording,
+  * stated packet purposes,
+  * ground-truth generation instructions.
+* No generated packet files were provided.
+* No model runs or platform responses were provided.
+
+Not performed:
+
+* No packets generated.
+* No `ANSWERS.txt` opened or reconstructed.
+* No counting performed.
+* No model/platform evaluation performed.
+
+Evidence available in this chat:
+
+* The source code text itself.
+* The stated intent/comments inside that source.
+
+Evidence not available:
+
+* Actual generated `packet_a.txt`, `packet_b.txt`, `packet_f.txt`, `packet_g.txt`.
+* Exact generated marker counts.
+* Any platform replies.
+
+Current result: **UNKNOWN** for the Job 2 measurement.

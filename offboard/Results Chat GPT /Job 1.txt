@@ -1,0 +1,157 @@
+## Sources checked
+
+* `llama.cpp` server documentation: ([GitHub][1])
+* `llama.cpp` server README (result JSON / n_keep documentation): ([GitHub][2])
+* `llama.cpp` completion README (context shifting behaviour): ([GitHub][3])
+* `llama.cpp` GitHub issues/discussions where behaviour is discussed: ([GitHub][4])
+
+---
+
+# 1. When KV cache fills with `--context-shift` enabled, which tokens are discarded and retained?
+
+## QUOTED
+
+From `llama.cpp` server README:
+
+> "`--keep N` | number of tokens to keep from the initial prompt (default: 0, -1 = all)"
+> ([GitHub][1])
+
+From README parameter documentation:
+
+> "`n_keep`: Specify the number of tokens from the prompt to retain when the context size is exceeded and tokens need to be discarded. The number excludes the BOS token."
+> ([GitHub][2])
+
+From completion documentation:
+
+> "When the context window is full, some of the earlier tokens (half of the tokens after `--keep`) will be discarded. The context must then be re-evaluated before generation can resume."
+> ([GitHub][3])
+
+## INFERRED
+
+The discarded region is the older portion of the context after the retained initial tokens. The retained portion is the first `--keep` tokens from the initial prompt.
+
+---
+
+# 2. What is the unit of `--keep`? What does `--keep 4` retain?
+
+## QUOTED
+
+> "`--keep N` | number of tokens to keep from the initial prompt (default: 0, -1 = all)"
+> ([GitHub][1])
+
+> "The number excludes the BOS token."
+> ([GitHub][2])
+
+## INFERRED
+
+The unit is **tokens**, not messages.
+
+`--keep 4` means retain the first four prompt tokens (excluding BOS), not four chat messages.
+
+---
+
+# 3. After a shift, does generation continue or stop?
+
+## QUOTED
+
+From completion documentation:
+
+> "The context must then be re-evaluated before generation can resume."
+> ([GitHub][3])
+
+## INFERRED
+
+With context shifting enabled, generation continues after the shift.
+
+---
+
+# 4. Is there any signal that a shift occurred?
+
+## FOUND
+
+The documentation found describes a server JSON field related to truncation:
+
+> "`truncated`: Boolean indicating if the context size was exceeded during generation, i.e. the number of tokens provided in the prompt (tokens_evaluated) plus tokens generated (tokens predicted) exceeded the context size (n_ctx)"
+> ([GitHub][5])
+
+## NOT FOUND
+
+I did not find, in the checked sources:
+
+* an HTTP response field specifically named "context_shift";
+* an SSE event specifically reporting "context shift";
+* a final JSON field explicitly saying "a context shift occurred";
+* a documented server log line emitted for a shift;
+* a documented verbosity flag that reports the shift.
+
+## INFERRED
+
+The checked documentation does not establish that a client can detect the shift directly.
+
+---
+
+# 5. Has the default for `--context-shift` changed between releases?
+
+## QUOTED
+
+Current server documentation:
+
+> "`--context-shift, --no-context-shift` | whether to use context shift on infinite text generation (default: disabled)"
+> ([Debian Manpages][6])
+
+## NOT FOUND
+
+I did not find an official release note or commit reference proving:
+
+* the exact release where the default changed;
+* the previous default value;
+* the direction of the change.
+
+---
+
+# 6. What happens with `--context-shift` disabled and cache full?
+
+## QUOTED
+
+Issue discussion:
+
+> "If disabled:
+>
+> * Requests bigger than context window will result in an error.
+> * `n_predict` for each sequence will be capped to `n_ctx - n_tokens_prompt`"
+>   ([GitHub][7])
+
+## INFERRED
+
+Disabled context shift means the server does not discard old generation tokens to continue indefinitely.
+
+---
+
+# NOT FOUND list
+
+* Exact source-code line showing the current server shift implementation.
+* Exact log message emitted when a shift happens.
+* Exact release where the `--context-shift` default changed.
+* A documented HTTP/SSE notification that a shift occurred.
+
+---
+
+# One thing that would prove the answer to question 4 wrong
+
+A checked `llama.cpp` source file or official documentation showing a client-visible event such as:
+
+* an HTTP JSON field,
+* SSE event,
+* response metadata field,
+
+that explicitly reports a context shift occurred.
+
+([GitHub][1])
+
+[1]: https://github.com/ggml-org/llama.cpp/blob/master/tools/server/README.md?utm_source=chatgpt.com "llama.cpp/tools/server/README.md at master · ggml-org/llama.cpp · GitHub"
+[2]: https://github.com/ggml-org/llama.cpp/blob/master/tools/server/README.md?plain=1&utm_source=chatgpt.com "llama.cpp/tools/server/README.md at master · ggml-org/llama.cpp · GitHub"
+[3]: https://github.com/ggml-org/llama.cpp/blob/master/tools/completion/README.md?utm_source=chatgpt.com "llama.cpp/tools/completion/README.md at master · ggml-org/llama.cpp · GitHub"
+[4]: https://github.com/ggml-org/llama.cpp/issues/19838?utm_source=chatgpt.com "Feature Request: Context truncation to keep chat progressing · Issue #19838 · ggml-org/llama.cpp · GitHub"
+[5]: https://github.com/ggml-org/llama.cpp/issues/5732?utm_source=chatgpt.com "Context length documentation confusion · Issue #5732 · ggml-org/llama.cpp"
+[6]: https://manpages.debian.org/testing/llama.cpp-tools/llama-server.1.en.html?utm_source=chatgpt.com "llama-server(1) — llama.cpp-tools — Debian testing — Debian Manpages"
+[7]: https://github.com/ggml-org/llama.cpp/issues/9390?utm_source=chatgpt.com "server : ability to disable context shift · Issue #9390 · ggml-org/llama.cpp · GitHub"

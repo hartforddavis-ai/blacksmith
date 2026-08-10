@@ -1,0 +1,257 @@
+## JOB 9 — Evidence collected
+
+Scope checked: published evidence for **strict instruction/output-format adherence**, not general capability.
+
+I found evidence for benchmarks and some model scores. I did **not** find a benchmark that directly measures:
+
+> “read a few thousand tokens, output exactly one fixed one-line format, and stop”
+
+That exact property is **NOT FOUND** in the sources checked.
+
+---
+
+# 1. Benchmarks measuring instruction-following / format adherence
+
+## IFEval (Instruction-Following Evaluation)
+
+**QUOTED**
+
+> “IFEval measures LLM ability to follow verifiable formatting instructions (e.g., output length, keyword inclusion, capitalization) with exact-match checking.” ([LLM Reference][1])
+
+**Evidence**
+
+IFEval tests explicit, objectively checkable constraints such as:
+
+* output length,
+* required keywords,
+* structure,
+* formatting constraints. ([EvalScope][2])
+
+Link:
+([DeepEval][3])
+
+---
+
+## FollowBench / FollowEval
+
+**QUOTED**
+
+> “FollowEval benchmark ... assess[es] LLMs across five critical dimensions of instruction following: string manipulation, commonsense reasoning, logical reasoning, spatial reasoning, and response constraints.” ([arXiv][4])
+
+Evidence of response-constraint testing exists.
+
+Exact fixed one-line stopping behaviour:
+**NOT FOUND**
+
+---
+
+## IFBench
+
+**QUOTED**
+
+> “We introduce a new benchmark, IFBench, to evaluate precise instruction following generalization on 58 new, diverse, and challenging verifiable out-of-domain constraints.” ([arXiv][5])
+
+Evidence:
+Tests precise instruction-following generalization.
+
+Exact local-model strict one-line benchmark:
+**NOT FOUND**
+
+---
+
+# 2. Open models under ~15B with published IFEval numbers found
+
+## Meta Llama 3.1 8B Instruct
+
+Parameter count:
+
+**QUOTED**
+
+Model name:
+
+> “meta-llama/Llama-3.1-8B-Instruct” ([Hugging Face][6])
+
+IFEval:
+
+**QUOTED**
+
+> “IFEval ... 80.4” (Llama 3.1 8B Instruct) ([Hugging Face][7])
+
+Parameters:
+8B
+
+License:
+**NOT FOUND in checked source excerpt**
+
+Ollama quantised build:
+**NOT FOUND in checked source excerpt**
+
+---
+
+## Qwen2.5-7B-Instruct
+
+Parameter count:
+
+Model name indicates 7B.
+
+IFEval:
+
+**QUOTED**
+
+> “IFEval (0-Shot) | 75.85” ([Hugging Face][8])
+
+Parameters:
+7B
+
+License:
+**NOT FOUND in checked source excerpt**
+
+Ollama quantised build:
+**NOT FOUND in checked source excerpt**
+
+---
+
+## Meta Llama 3.2 3B Instruct
+
+IFEval:
+
+**QUOTED**
+
+> “Meta-Llama-3.2-3B-Instruct ... IFEval 77.01” ([GitHub][9])
+
+Parameters:
+3B
+
+License:
+**NOT FOUND in checked source excerpt**
+
+Ollama quantised build:
+**NOT FOUND in checked source excerpt**
+
+---
+
+## Gemma 2 9B Instruct
+
+IFEval:
+
+**QUOTED**
+
+> “Gemma 2 (9B) ... IFEval 75.42” ([Reddit][10])
+
+Parameters:
+9B
+
+License:
+**NOT FOUND in checked source excerpt**
+
+Ollama quantised build:
+**NOT FOUND in checked source excerpt**
+
+---
+
+# 3. Models with reasoning disabled / non-reasoning mode
+
+## Ollama thinking controls
+
+**QUOTED**
+
+> “When thinking is disabled, the model will not think and directly output the content.” ([Ollama][11])
+
+Ollama documents support for disabling thinking on some thinking-capable models:
+
+**QUOTED**
+
+> “Enable thinking ... Disable thinking ... `--think=false`” ([Ollama][11])
+
+Supported examples listed:
+
+* DeepSeek R1
+* Qwen 3
+* others added over time. ([Ollama][11])
+
+Whether this applies to every model above:
+**UNKNOWN**
+
+---
+
+## Gemma 4
+
+**QUOTED**
+
+> “Trigger Thinking: Thinking is enabled by including the `<|think|>` token ... To disable thinking, remove the token.” ([Ollama][12])
+
+This is evidence for a configurable thinking mode.
+
+---
+
+# 4. Parameter count, licence, Ollama availability
+
+| Model                 | Parameters | Licence   | Ollama quantised build |
+| --------------------- | ---------: | --------- | ---------------------- |
+| Llama 3.1 8B Instruct |         8B | NOT FOUND | NOT FOUND              |
+| Qwen2.5 7B Instruct   |         7B | NOT FOUND | NOT FOUND              |
+| Llama 3.2 3B Instruct |         3B | NOT FOUND | NOT FOUND              |
+| Gemma 2 9B Instruct   |         9B | NOT FOUND | NOT FOUND              |
+
+I did not verify these fields from primary model/Ollama pages in this search pass.
+
+---
+
+# 5. Evidence reasoning models are worse at strict formats?
+
+Question:
+
+> Is there published evidence that reasoning models are worse at strict output formats than non-reasoning models of similar size?
+
+Result:
+
+**NOT FOUND**
+
+I found evidence that:
+
+* reasoning/thinking modes exist and can sometimes be disabled. ([Ollama][11])
+* instruction-following benchmarks exist. ([EvalScope][2])
+
+I did **not** find a controlled comparison showing:
+
+> same-size reasoning model vs non-reasoning model → reasoning model has worse strict-format adherence.
+
+---
+
+# Evidence vs inference
+
+## Benchmark-backed
+
+* IFEval measures verifiable instruction-following constraints. ([LLM Reference][1])
+* Llama 3.1 8B Instruct: IFEval 80.4. ([Hugging Face][7])
+* Qwen2.5 7B Instruct: IFEval 75.85. ([Hugging Face][8])
+* Llama 3.2 3B Instruct: IFEval 77.01. ([GitHub][9])
+* Gemma 2 9B Instruct: IFEval 75.42 (secondary source). ([Reddit][10])
+
+## Reputation-based
+
+**NOT USED**
+
+No model recommendation or ranking by reputation provided.
+
+---
+
+# NOT FOUND
+
+* A benchmark specifically measuring exact one-line fixed-format compliance over long inputs.
+* Published evidence that reasoning models systematically fail strict formats more often than comparable non-reasoning models.
+* Verified Ollama quantised availability for each listed model.
+* Verified licence information for each listed model in this search pass.
+
+[1]: https://www.llmreference.com/benchmark/ifeval?utm_source=chatgpt.com "IFEval Benchmark: Instruction-Following Evaluation for LLMs | LLM Reference"
+[2]: https://evalscope.readthedocs.io/en/latest/benchmarks/ifeval.html?utm_source=chatgpt.com "IFEval | EvalScope"
+[3]: https://deepeval.com/docs/benchmarks-ifeval?utm_source=chatgpt.com "IFEval | DeepEval - The LLM Evaluation Framework"
+[4]: https://arxiv.org/abs/2311.09829?utm_source=chatgpt.com "FollowEval: A Multi-Dimensional Benchmark for Assessing the Instruction-Following Capability of Large Language Models"
+[5]: https://arxiv.org/abs/2507.02833?utm_source=chatgpt.com "Generalizing Verifiable Instruction Following"
+[6]: https://huggingface.co/meta-llama/Llama-3.1-8B-Instruct?utm_source=chatgpt.com "meta-llama/Llama-3.1-8B-Instruct · Hugging Face"
+[7]: https://huggingface.co/meta-llama/Llama-3.1-405B-Instruct?utm_source=chatgpt.com "meta-llama/Llama-3.1-405B-Instruct · Hugging Face"
+[8]: https://huggingface.co/Qwen/Qwen2.5-7B-Instruct/blob/refs%2Fpr%2F4/README.md?utm_source=chatgpt.com "README.md · Qwen/Qwen2.5-7B-Instruct at refs/pr/4"
+[9]: https://github.com/huggingface/blog/blob/main/llama32.md?utm_source=chatgpt.com "blog/llama32.md at main · huggingface/blog · GitHub"
+[10]: https://www.reddit.com/r/LocalLLaMA/comments/1ehdchd?utm_source=chatgpt.com "New results for gemma-2-9b-it"
+[11]: https://ollama.com/blog/thinking?utm_source=chatgpt.com "Thinking · Ollama Blog"
+[12]: https://ollama.com/library/gemma4?utm_source=chatgpt.com "gemma4"

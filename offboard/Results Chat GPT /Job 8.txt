@@ -1,0 +1,126 @@
+## JOB 8 evaluation under supplied criteria
+
+### Evidence available in this conversation
+
+**Observed:**
+
+* The job description states that no rung above 500 tokens has run here.
+* The proposed test compares:
+
+  * `packet_d.txt` ≈ 2,000 tokens, 8 markers
+  * `packet_e.txt` ≈ 8,000 tokens, 8 markers
+* The proposed procedure requires fresh chats, whole-file pasting, and checking for truncation/attachment.
+* The intended output is a per-platform comparison.
+
+**Not independently verified:**
+
+* Whether the packets exist.
+* Whether the token counts and character counts are accurate.
+* Whether Job 2 has passed.
+* Whether any platform truncates, attaches, or modifies the paste.
+* Whether any model succeeds or fails at either size.
+
+Status: **UNKNOWN**
+
+---
+
+## Evaluation
+
+### ROBUST
+
+Claim being tested:
+
+> Larger input size may cause task failure.
+
+Current evidence:
+
+* No failure at larger size has occurred.
+* No reproduction of failure exists.
+
+Under the supplied rule:
+
+> A failure not yet occurred is credible only if the path is named, the triggering action is named, the asset exposed is named, and someone other than the proposer independently checked all three against the real system.
+
+Those conditions are not demonstrated in the provided material.
+
+Result: **Not a demonstrated failure.**
+
+---
+
+### SIMPLE
+
+Does the job add roles, steps, or duplicate controls?
+
+Observed:
+
+* It adds a separate size-scaling test.
+* It repeats some Job 2 conditions (fresh chat, same model, marker counting).
+
+Whether this is duplication depends on Job 2 contents, which are not provided.
+
+Result: **UNKNOWN**
+
+---
+
+### ROBUST (test value)
+
+The proposed test has a defined measurement:
+
+* input size changes,
+* task remains constant,
+* output accuracy is compared.
+
+Result: **Defined test.**
+
+Whether it closes a demonstrated failure: **NO DEMONSTRATED FAILURE PROVIDED.**
+
+---
+
+### LEAN
+
+Whether this is the smallest alternative depends on available alternatives, which are not provided.
+
+Result: **UNKNOWN**
+
+---
+
+### FAST
+
+The job has a clear decision rule:
+
+* pass both sizes,
+* fail at large size,
+* fail both sizes.
+
+Result: **PASS**
+
+---
+
+## Generator Clause
+
+This job evaluates generated model output.
+
+Checks specified:
+
+* Drift: output departs from frozen task.
+* Confabulation: output contains specifics absent from input.
+* Elaboration: output longer than required.
+
+No run results are provided.
+
+Status: **UNKNOWN**
+
+---
+
+## Final classification from supplied evidence
+
+| Criterion                 | Result                  |
+| ------------------------- | ----------------------- |
+| Demonstrated failure      | NO                      |
+| Test defined              | YES                     |
+| SIMPLE                    | UNKNOWN                 |
+| ROBUST as failure closure | NO demonstrated failure |
+| LEAN                      | UNKNOWN                 |
+| FAST                      | PASS                    |
+
+No conclusion about whether the task survives being made bigger can be reached until the described runs produce evidence.

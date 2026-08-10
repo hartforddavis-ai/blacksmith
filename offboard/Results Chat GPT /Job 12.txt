@@ -1,0 +1,167 @@
+## Evidence collected
+
+I found published measurements for some instruction-following benchmarks. I did **not** find published measurements for Q4_K_M/Q5_K_M/Q6_K/Q8_0 specifically on the requested properties.
+
+---
+
+# 1. Published work measuring quantised models on instruction-following benchmarks
+
+## QUOTED
+
+**Paper:** *A Comprehensive Evaluation of Quantized Instruction-Tuned Large Language Models: An Experimental Analysis up to 405B* (2024)
+
+Link: ([arXiv][1])
+
+> “This paper evaluates the performance of instruction-tuned LLMs across various quantization methods (GPTQ, AWQ, SmoothQuant, and FP8) on models ranging from 7B to 405B.”
+
+> “Using 13 benchmarks, we assess various task types: commonsense Q&A, knowledge and language understanding, instruction following, hallucination detection, mathematics, and dialogue.”
+
+([arXiv][1])
+
+**INFERRED**
+
+This is a direct match for instruction-following evaluation. It does not evaluate llama.cpp GGUF levels such as Q4_K_M.
+
+---
+
+## QUOTED
+
+**Paper:** *QLoRA: Efficient Finetuning of Quantized LLMs* (2023)
+
+Link: ([arXiv][2])
+
+> “We use QLoRA to finetune more than 1,000 models, providing a detailed analysis of instruction following and chatbot performance across 8 instruction datasets…”
+
+([arXiv][2])
+
+**INFERRED**
+
+QLoRA studies 4-bit quantisation, but it is a different setup from llama.cpp GGUF inference quants.
+
+---
+
+# 2. Does quantisation degrade instruction-following / format adherence / stopping more than general capability?
+
+## QUOTED
+
+The 2024 evaluation reports:
+
+> “performance varies significantly with different quantization methods, model size, and bit-width…”
+
+and includes instruction-following among evaluated task types. ([arXiv][1])
+
+Qwen’s published quantisation table reports IFEval (Strict Prompt-Level Accuracy):
+
+| Model               | BF16 | GPTQ-Int4 |  AWQ |
+| ------------------- | ---: | --------: | ---: |
+| Qwen2-7B-Instruct   | 53.1 |      49.4 | 51.4 |
+| Qwen2-1.5B-Instruct | 29.0 |      27.0 | 29.9 |
+| Qwen2-72B-Instruct  | 77.6 |      78.9 | 76.9 |
+
+Source: ([Qwen][3])
+
+**INFERRED**
+
+There is evidence that some 4-bit methods reduce instruction-following benchmark scores.
+
+**NOT FOUND**
+
+I did not find published measurements showing:
+
+* failure to stop generation,
+* two-hour reasoning runs with no answer,
+* exact format-template completion failures,
+* structured-output adherence compared directly against perplexity loss.
+
+---
+
+# 3. Q4_K_M vs Q5_K_M vs Q6_K vs Q8_0 on instruction-following
+
+**NOT FOUND**
+
+I did not find published benchmark tables comparing:
+
+* llama.cpp Q4_K_M
+* llama.cpp Q5_K_M
+* llama.cpp Q6_K
+* llama.cpp Q8_0
+
+against instruction-following metrics.
+
+The sources found compare GPTQ, AWQ, NF4, FP8, etc., not llama.cpp K-quants. ([arXiv][1])
+
+---
+
+# 4. Quantisation effects on reasoning models, especially termination failures
+
+## QUOTED
+
+A 2025 long-context quantisation study states:
+
+> “We present the first systematic evaluation of quantized LLMs on tasks with long-inputs (>64K tokens) and long-form outputs.”
+
+It evaluated:
+
+> “five quantization methods … and five models.”
+
+([arXiv][4])
+
+**INFERRED**
+
+There is some evidence that quantisation interacts with difficult tasks, especially long-context tasks.
+
+**NOT FOUND**
+
+I did not find published measurements specifically on:
+
+* reasoning-model chain-of-thought termination,
+* failure to end reasoning,
+* quantisation causing runaway internal reasoning.
+
+---
+
+# 5. Quantisation vs verbatim quotation accuracy from supplied documents
+
+**NOT FOUND**
+
+I did not find published measurements comparing quantisation levels against:
+
+* exact quote reproduction,
+* document-grounded verbatim extraction,
+* supplied-document recall accuracy.
+
+---
+
+# Literature coverage
+
+| Question                                      | Answered by literature? |
+| --------------------------------------------- | ----------------------- |
+| 1. Instruction-following benchmarks           | YES                     |
+| 2. Format adherence / instruction degradation | PARTIAL                 |
+| 3. Q4_K_M vs Q5_K_M vs Q6_K vs Q8_0           | NOT FOUND               |
+| 4. Reasoning termination failures             | NOT FOUND               |
+| 5. Verbatim quotation accuracy                | NOT FOUND               |
+
+---
+
+## Evidence boundary
+
+Measured:
+
+* instruction-following benchmark scores,
+* some 4-bit quantisation effects,
+* some long-context/task effects.
+
+Not measured in the sources found:
+
+* exact llama.cpp K-quant comparison,
+* stopping failures,
+* exact-format failures,
+* verbatim quotation accuracy.
+
+Those remain **UNKNOWN** from the located literature.
+
+[1]: https://arxiv.org/abs/2409.11055?utm_source=chatgpt.com "A Comprehensive Evaluation of Quantized Instruction-Tuned Large Language Models: An Experimental Analysis up to 405B"
+[2]: https://arxiv.org/abs/2305.14314?utm_source=chatgpt.com "QLoRA: Efficient Finetuning of Quantized LLMs"
+[3]: https://qwen.readthedocs.io/en/latest/getting_started/quantization_benchmark.html?utm_source=chatgpt.com "Performance of Quantized Models - Qwen"
+[4]: https://arxiv.org/abs/2505.20276?utm_source=chatgpt.com "Does quantization affect models' performance on long-context tasks?"

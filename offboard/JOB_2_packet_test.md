@@ -1,85 +1,99 @@
-# JOB 2 — is the task well-formed, or are the local models just failing it?
+# JOB 2 — is it the model, or is it the test?
 
-**Run this one first.** It produces a measurement, not a fact, and it is the
-only job here that cannot be done on our own machine at any price.
+**Run this one first.** It produces a measurement, not a fact, and it is the only
+job here that cannot be done on our own machine at any price.
 
 ---
 
-## WHAT IT DECIDES
+## WHAT CHANGED, 7 AUG
 
-Locally, two models have now failed a counting task. We do not know whether
-that is the models or the task. This tells us.
+The first version of this job used four packets of bland weather prose. **It
+could not have found the fault.**
 
-- **Strong models all count correctly** → the task is clean, and the local
-  models are failing something frontier models find trivial. That is a
-  model-selection finding, and the ramp is measuring what it claims to.
-- **Strong models miscount or waffle** → the task is ambiguous, and every row
-  the ramp ever produces is unreadable. That kills the ramp, not the models,
-  and it is the more valuable answer of the two.
+The real ramp packets are cut from Blacksmith's own KERNEL and SPEC — 42,627
+characters containing 16 code fences and 21 `---` separators, and nothing in them
+but instructions to a model. The counting task is appended after one more `---`,
+so it arrives as roughly the twentieth directive block, with no signal that it is
+the real one. And the 500-token packet is cut mid-code-fence: 5 fences, odd, so
+the task instruction lands inside a block that was never closed.
+
+Weather prose reproduces none of that. A clean result on prose would have said
+"the task is fine" and sent us back to tuning the model.
+
+So the suite now moves **one variable at a time**.
+
+---
+
+## THE SIX PACKETS
+
+`a`, `b`, `f`, `g` are ~2,400 characters, the size of the rung that fails.
+`d` and `e` are the same plain-prose build as `a`, scaled up instead — a third
+axis, orthogonal to the other four: does correctness degrade from length alone,
+with no directive collision and no fence defect in play.
+
+| packet | filler | fences | size | what it isolates |
+|---|---|---|---|---|
+| `packet_a.txt` | plain prose | 0 | ~500 tok | **baseline** — can the model do this task at all |
+| `packet_b.txt` | plain prose | 0 | ~500 tok | **control** — a different marker count, catches a model repeating rather than counting |
+| `packet_f.txt` | directive text | 10, balanced | ~500 tok | **instruction collision** — does a body full of imperative rules stop the model obeying the last one |
+| `packet_g.txt` | directive text | 11, **odd** | ~500 tok | **unterminated fence** — the 500-token rung's actual defect, reproduced |
+| `packet_d.txt` | plain prose | 0 | ~2,000 tok | **scale** — same baseline, 4x longer |
+| `packet_e.txt` | plain prose | 0 | ~8,000 tok | **scale** — same baseline, 16x longer |
+
+`a` and `f` differ in one thing: what the filler is made of. `f` and `g` differ in
+one thing: whether the last code block is closed. `a`, `d`, `e` differ in one
+thing: length. That is the whole design.
 
 ---
 
 ## HOW TO RUN IT
 
-Three of the five packets in `packets/` belong to this job — a, b and c. The
-other two are for Job 8. Each is a complete prompt: it ends with its own
-instruction, so **paste the whole file and add nothing**. Not a word of
-framing, no "please", no "this is a test". Added words are a different
-experiment.
+Each file is a complete prompt — it ends with its own instruction, so **paste the
+whole file and add nothing.** Not a word of framing, no "please", no "this is a
+test". Added words are a different experiment.
 
-Use at least three different free platforms. Suggested: ChatGPT, Gemini,
-Claude, DeepSeek, Qwen, Mistral — whichever are reachable.
+Use at least three free platforms. **Fresh chat for every packet, and turn
+persistent memory OFF** — a new chat is not a clean room on platforms that
+remember across conversations, and `packet_b`'s entire purpose is catching a
+model that repeats instead of counting.
 
-**Fresh chat for every single packet — and turn persistent memory OFF.** A new
-chat is not a clean room on platforms that remember across conversations.
-ChatGPT, Gemini and others carry memory between chats by default, so a model
-can see what it answered an hour ago and repeat it. Use a temporary or
-incognito chat, or switch memory off in settings, before the first packet.
+Order: **a, then f, then g, then b.**
 
-Without that, packet B measures nothing: its whole purpose is to catch a model
-repeating A's answer, and a model with memory has a legitimate route to A's
-answer that has nothing to do with counting.
+`ANSWERS.txt` holds the ground truth, counted by exact line match. **Do not open
+it until every model has replied.**
 
-Run them in this order: **A, then C, then B.**
+---
 
-**If a packet fails and you are unsure whether the model saw an earlier one,
-record that doubt in `RESULTS.md`.** A result with a known hole in it is usable.
-A result with an unrecorded hole is worse than no result.
+## HOW TO READ THE RESULT
 
-| packet | what it is |
+| what happens | what it means |
 |---|---|
-| `packet_a.txt` | Faithful replica of the local rung — plain markers, no traps. The direct comparison. |
-| `packet_c.txt` | Same idea plus near-miss lines: single brackets, lowercase, a tag with no number. Every one of them fails the stated rule literally, so the right answer is not a judgement call. Tests precision. |
-| `packet_b.txt` | A different number of markers, no traps. **The control.** Anything that answered A confidently and returns the same number here was pattern-matching, not counting. |
-
-`ANSWERS.txt` holds the ground truth, verified by exact-match line count and
-not by eye. **Do not open it until every model has replied.** Knowing the
-number changes how you read a wrong answer.
+| **a right, f wrong** | **Instruction collision is the fault.** The biggest finding available — it means the ramp has been measuring a packet that argues with its own task, and no amount of model tuning would have helped. |
+| **a and f right, g wrong** | The unterminated fence is the fault. Narrow, mechanical, and fixable in the packet builder. |
+| **all four right** | The task is sound and frontier models handle it. The fault is local — the model, the runner, or the settings — and Jobs 1, 3, 4 and 6 are where to look. |
+| **a wrong** | The task itself is broken, and every row the ramp will ever produce is unreadable. Stop and say so. |
+| **b returns the same number as a** | That model was repeating, not counting. Its other answers are void. |
 
 ---
 
 ## WHAT TO BRING BACK
 
-Per platform, per packet, four things:
+Per platform, per packet:
 
 1. Platform and model name, with version if shown.
 2. The reply, **verbatim** — including anything before or after the count.
-3. Did it obey *"Reply with one line and nothing else"*? Yes or no.
-4. Roughly how long it took, and whether it visibly showed reasoning.
+3. Did it obey *"Reply with one line and nothing else"*?
+4. Was memory off?
 
-Point 3 matters as much as the number. A model that counts correctly but
-buries it in three paragraphs of explanation fails the format the pipeline
-depends on, and that is a finding in its own right.
+Point 3 matters as much as the number. A model that counts correctly but buries
+it in three paragraphs fails the format the pipeline depends on, and that is a
+finding in its own right.
 
 ---
 
 ## WHAT NOT TO DO
 
-- **Do not tell it the answer, or that markers were "planted", or that this
-  is a test.** It will count more carefully than it otherwise would, and the
-  measurement is then worthless.
-- **Do not re-ask a model that got it wrong.** A second attempt after an
-  implied correction measures nothing. One shot each, recorded as it fell.
-- **Do not ask it to explain its count** until after it has answered and you
-  have recorded the answer. If you want the reasoning, ask in a follow-up
-  message, and note that the first reply was already recorded.
+- **Do not say markers were "planted", or that this is a test.** It will count
+  more carefully than it otherwise would, and the measurement is then worthless.
+- **Do not re-ask a model that got it wrong.** One shot each, recorded as it fell.
+- **Do not ask it to explain its count** until after the answer is recorded.
