@@ -73,6 +73,12 @@ def main(job, model):
     think_path = dest.parent / (dest.stem + ".thinking.md")
     think_out = None
 
+    # Bare reply, no stamp header — same naming convention run_sealed.py uses,
+    # so quotes.py can be pointed at either pipeline's output without a manual
+    # extraction step first.
+    reply_path = dest.parent / (dest.stem + ".reply.md")
+    reply_out = reply_path.open("w")
+
     start, first, chars, thought_chars, final = time.monotonic(), None, 0, 0, {}
     with dest.open("w") as out:
         out.write(
@@ -102,15 +108,19 @@ def main(job, model):
                         think_out.write(thought)
                         think_out.flush()
                         thought_chars += len(thought)
-                    out.write(chunk.get("response", ""))
+                    response = chunk.get("response", "")
+                    out.write(response)
                     out.flush()
-                    chars += len(chunk.get("response", ""))
+                    reply_out.write(response)
+                    reply_out.flush()
+                    chars += len(response)
                     if chunk.get("done"):
                         final = chunk
         except OSError as e:
             elapsed = time.monotonic() - start
             if think_out is not None:
                 think_out.close()
+            reply_out.close()
             out.write(
                 f"\n\n---\n\n"
                 f"STALLED: read failed after {elapsed:,.0f}s "
@@ -131,8 +141,10 @@ def main(job, model):
         )
     if think_out is not None:
         think_out.close()
+    reply_out.close()
     print(f"wrote {dest.relative_to(build_paste.BS)}  "
-          f"({chars:,} reply chars, {thought_chars:,} reasoning chars)")
+          f"({chars:,} reply chars, {thought_chars:,} reasoning chars)  "
+          f"reply: {reply_path.name}")
 
 
 if __name__ == "__main__":
