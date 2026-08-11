@@ -44,6 +44,7 @@ class BoundRun:
     first_token_s: float
     final_token_s: float
     exit_code: str
+    done_reason: str
 
 
 def run(model: str, prompt: str, timeout: float = 1800) -> BoundRun:
@@ -66,6 +67,7 @@ def run(model: str, prompt: str, timeout: float = 1800) -> BoundRun:
     start = time.monotonic()
     first_token = None
     chunks = []
+    done_reason = ""
     try:
         with urllib.request.urlopen(req, timeout=timeout) as r:
             for line in r:
@@ -74,6 +76,7 @@ def run(model: str, prompt: str, timeout: float = 1800) -> BoundRun:
                     first_token = time.monotonic() - start
                 chunks.append(chunk.get("response", ""))
                 if chunk.get("done"):
+                    done_reason = chunk.get("done_reason", "")
                     break
     except OccupantError:
         raise
@@ -86,7 +89,7 @@ def run(model: str, prompt: str, timeout: float = 1800) -> BoundRun:
     return BoundRun(
         model=model, prompt=prompt, response="".join(chunks),
         first_token_s=first_token, final_token_s=time.monotonic() - start,
-        exit_code="0",
+        exit_code="0", done_reason=done_reason,
     )
 
 

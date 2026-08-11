@@ -174,7 +174,7 @@ def main(job, model):
             execution=evidence_log.Execution(
                 first_token=f"{run.first_token_s:.2f}s",
                 final_token=f"{run.final_token_s:.2f}s",
-                exit_code=run.exit_code),
+                exit_code=run.exit_code if run.done_reason == "stop" else run.done_reason),
             integrity=evidence_log.IntegrityReport(
                 cell_pre_hash=pre.root_hash(),
                 cell_post_hash=post.root_hash(),
