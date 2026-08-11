@@ -109,6 +109,19 @@ class SterileEnvTests(unittest.TestCase):
         with self.assertRaises(launch.LaunchError):
             launch.sterile_env(self.home, {"HOME": "/etc"})
 
+    def test_claude_config_dir_argument_is_set_when_given(self):
+        cfg = self.home / "cfg"
+        env = launch.sterile_env(self.home, claude_config_dir=cfg)
+        self.assertEqual(env["CLAUDE_CONFIG_DIR"], str(cfg))
+
+    def test_claude_config_dir_absent_by_default(self):
+        self.assertNotIn("CLAUDE_CONFIG_DIR", launch.sterile_env(self.home))
+
+    def test_claude_config_dir_via_extra_env_is_refused_with_a_specific_message(self):
+        with self.assertRaises(launch.LaunchError) as caught:
+            launch.sterile_env(self.home, {"CLAUDE_CONFIG_DIR": "/tmp/x"})
+        self.assertIn("claude_config_dir argument", str(caught.exception))
+
 
 class PlanRefusalTests(unittest.TestCase):
     def setUp(self):
@@ -162,6 +175,27 @@ class PlanRefusalTests(unittest.TestCase):
     def test_run_refuses_anything_that_is_not_a_plan(self):
         with self.assertRaises(launch.LaunchError):
             launch.run({"argv": ["/bin/echo"]})
+
+    def test_claude_config_dir_outside_the_cell_is_refused(self):
+        outside = self.tmp / "not-in-the-cell"
+        with self.assertRaises(cell_mod.CellError):
+            launch.plan(self.cell, self.runner, launch.SAME_UID,
+                        claude_config_dir=outside)
+
+    def test_claude_config_dir_inside_the_cell_but_undeclared_is_refused(self):
+        # The cell in setUp has no scratch_prefixes at all.
+        undeclared = self.cell.home / "cfg"
+        with self.assertRaises(launch.LaunchError) as caught:
+            launch.plan(self.cell, self.runner, launch.SAME_UID,
+                        claude_config_dir=undeclared)
+        self.assertIn("not declared as scratch", str(caught.exception))
+
+    def test_claude_config_dir_declared_scratch_is_wired_into_the_env(self):
+        built = build_cell(self.cells / "c2", scratch_prefixes=("cfg",))
+        cfg = built.home / "cfg"
+        plan = launch.plan(built, self.runner, launch.SAME_UID,
+                           claude_config_dir=cfg)
+        self.assertEqual(plan.env["CLAUDE_CONFIG_DIR"], str(cfg))
 
 
 class SpawnedChildTests(unittest.TestCase):

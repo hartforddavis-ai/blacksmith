@@ -132,11 +132,32 @@ check supplies evidence.
     `scratch_prefixes` does not help because both names are in
     `CELL_FORBIDDEN_NAMES`, so `census` reports the cell non-sterile and
     `launch.plan`'s `require_sterile` refuses before spawning. Every launch in
-    this tree therefore uses a stub. Resolving it means deciding whether the
-    runner's own state directory counts as contamination — a definitional call
-    about what sterility means, adjacent to [SCOTT] ruling 3 on evidence
-    placement. Not decided here. **BLOCKS the step 1 proof against the real
-    runner; UNKNOWN.**
+    this tree therefore uses a stub.
+
+    **PARTIALLY RESOLVED 11 Aug 2026 (TODO !57).** Not by ruling on whether
+    `.claude`/`.claude.json` count as contamination — `FAILURE_LOG.md`'s
+    "step 3 is untestable until the owner rules" entry killed that framing
+    outright (Law 2: a step that can't run fails BUILT; Law 3: a fix
+    depending on someone else's ruling is one decision split into two
+    dependent steps). Instead: `launch.plan()` gained a `claude_config_dir`
+    argument, confined to the cell and checked against the built cell's own
+    declared `scratch_prefixes` before spawn. Set as `CLAUDE_CONFIG_DIR` in
+    the child's environment, it redirects a real Claude Code runner's startup
+    writes away from the forbidden literal path entirely — `CELL_FORBIDDEN_
+    NAMES` is untouched, and the collision this item names simply never
+    happens. Proven against a real spawned child in `test_lifecycle_proof.py`
+    (`ClaudeConfigDirTests`): a write under the redirected path lands as a
+    declared scratch delta and reads INTACT; the literal `~/.claude.json`
+    write is still refused, unchanged.
+
+    **What this does not prove.** No test here has ever run the actual
+    `claude` binary — every launch, including this one, uses a stub script
+    (see `test_lifecycle_proof.py`'s own module docstring). Whether the real
+    CLI honours `CLAUDE_CONFIG_DIR` as expected, and whether SPEC §5 step 4's
+    flags (`--safe-mode`, `--tools`) bind, are unproven — ASSUMPTIONS #19,
+    untouched by this fix. The kernel-grade contamination question for the
+    real runner also stays open on its own terms; this item only closes the
+    same-UID structural collision.**
 
 ## Out of scope for this remediation
 

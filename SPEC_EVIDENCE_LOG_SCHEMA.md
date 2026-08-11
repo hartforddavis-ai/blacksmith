@@ -25,7 +25,11 @@ Define evidence log schema as the formal proof chain that joins:
 - started at: <ISO timestamp>
 - kernel: <kernel digest>
 - job: <job digest>
-- evidence_mode: <"copy" or "mount">
+- evidence_mode: <"copy", "mount", or "none" — "none" means no cell was built;
+  only the real source files were watched via `external_paths`. Ruled 11 Aug
+  2026 (TODO !55): a cell around an HTTP-call occupant has no write path, so
+  its own internal manifest could only ever read INTACT, duplicating the
+  external check without closing any failure it didn't already close>
 
 ## Execution
 - first token: <time offset from launch>

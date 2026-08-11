@@ -1,26 +1,31 @@
 #!/usr/bin/env python3.12
-"""Run a bound prompt inside a sealed, measured cell and write the evidence record.
+"""Run a bound prompt, measure the sources around it, and write the evidence record.
 
 `run_bound.py` calls the model with nothing around it. This is the same call
-with Ring 0 attached: build a sterile cell holding the sources, measure it,
-run, measure again, write the record. It is the composition that produced
+with the integrity check attached: measure the real source files before and
+after the run, run, write the record. It is the composition that produced
 `runs/pivot_smoke.qwen3.5-9b.20260805T091739.md` on 5 Aug 2026 and was then
 lost — no file in this repo's history has ever called `evidence_log.write`,
 so that record could not be reproduced. This file is that recipe, kept.
 
     python3.12 run_sealed.py verify gemma4:12b
 
-WHERE THE CELL LIVES, and why it is not in this repo. `cell.build` refuses a
-location with host-context files above it, and `~/.claude` sits above the
-whole of `~/Documents` — so every path in this tree is contaminated and a cell
-cannot be built in any of them. CELLS_ROOT is therefore outside the home
-directory entirely. That refusal is the point, not an obstacle routed around.
+NO CELL ON THIS PATH — dropped 11 Aug 2026 (TODO !55), Scott's ruling. The
+occupant is an HTTP call to Ollama; nothing ever ran inside the cell and
+nothing could write to it, so the cell's own internal manifest could only
+ever read INTACT — it measured a static copy nobody touched. The real check
+was always `external_paths`: the actual source files the prompt was composed
+from, which something on this machine genuinely could edit mid-run. That
+check is what remains. `attest.freeze` still needs a directory to walk, so a
+throwaway scratch dir stands in for it — nothing is copied into it, nothing
+is declared evidence, nothing is sealed. Dropping the cell removed a control
+that duplicated `external_paths` without closing any failure it didn't
+already close (Law 1 SIMPLE/ROBUST).
 
-WHAT THE CELL PROVES HERE, stated narrowly. The occupant is an HTTP call, so
-nothing runs inside the cell and nothing could write to it. The measurement
-establishes that the source bytes the prompt was built from did not change
-across the run. It does not establish containment: containment is the UID
-boundary, SPEC §8 step 0, still UNKNOWN.
+WHAT THIS PROVES HERE, stated narrowly. The measurement establishes that the
+source bytes the prompt was built from did not change across the run. It does
+not establish containment: containment is the UID boundary, SPEC §8 step 0,
+still UNKNOWN.
 
 The verdict is UNKNOWN and is not computed here. `gauge` adjudicates against a
 bundle and a contract that this path does not have, and writing anything else
@@ -33,15 +38,12 @@ import hashlib
 import os
 import pathlib
 import sys
+import tempfile
 
 import attest
 import build_paste
-import cell as cell_mod
 import evidence_log
 import occupant_bound
-
-# Outside the home directory, because everything inside it is contaminated.
-CELLS_ROOT = pathlib.Path("/private/tmp/blacksmith-cells")
 
 # attest names three integrity states; the evidence log's schema names two.
 # The mapping is written out rather than inferred, and UNKNOWN deliberately has
@@ -57,17 +59,14 @@ def digest(path):
 STERILE_FAILURES = pathlib.Path(build_paste.BS) / "runs" / "STERILE_FAILURES.md"
 
 
-def log_sterile_failure(job, model, stamp, root, report, note):
-    """One entry per run that did not come back sterile.
+def log_sterile_failure(job, model, stamp, report, note):
+    """One entry per run whose watched source files did not come back clean.
 
     Its own file, and separate from the ramp's for a reason: the ramp records a
-    model getting an answer wrong, this records the *seal* reporting that bytes
-    moved. They are different kinds of bad, and a reader scanning for one should
-    not have to sift the other. Neither belongs in FAILURE_LOG.md, whose entry
-    rule admits withdrawn designs in a fixed form.
-
-    Written BEFORE the cell is preserved and never inside it — an account of a
-    contaminated tree that lives in the contaminated tree is not evidence.
+    model getting an answer wrong, this records the measurement reporting that
+    bytes moved. They are different kinds of bad, and a reader scanning for one
+    should not have to sift the other. Neither belongs in FAILURE_LOG.md, whose
+    entry rule admits withdrawn designs in a fixed form.
     """
     STERILE_FAILURES.parent.mkdir(parents=True, exist_ok=True)
     new = not STERILE_FAILURES.exists()
@@ -75,14 +74,13 @@ def log_sterile_failure(job, model, stamp, root, report, note):
     with STERILE_FAILURES.open("a") as f:
         if new:
             f.write("# SEALED RUNS — FAILED STERILITY\n\nOne entry per run whose "
-                    "cell or sources did not come back as they went in. Each "
+                    "watched source files did not come back as they went in. Each "
                     "names the paths that moved. Measurements, not design "
                     "rulings: see FAILURE_LOG.md for those.\n")
         f.write(
             f"\n---\n\n## {job} · {model} · {stamp}\n"
             f"- integrity: {(report or {}).get('integrity', 'no comparison reached')}\n"
             f"- detail: {(report or {}).get('detail', note)}\n"
-            f"- cell kept at: {root}\n"
             f"- paths that changed: {len(deltas)}\n")
         for d in deltas[:40]:
             f.write(f"    - {d['change']}: {d['path']}\n")
@@ -93,9 +91,10 @@ def log_sterile_failure(job, model, stamp, root, report, note):
 def originals_for(spec_job):
     """Every real file the prompt was composed from — kernel, job, sources.
 
-    These are the paths outside the cell. The composed paste file is not among
-    them: it is regenerated by `build_paste.build` on every run, so it would
-    report a delta on every run and mean nothing.
+    These are the only paths that matter now there is no cell: the composed
+    paste file is not among them, since it is regenerated by
+    `build_paste.build` on every run and would report a delta on every run,
+    meaning nothing.
     """
     return [build_paste.KERNEL, spec_job["job"]] + [p for _, p in spec_job["sources"]]
 
@@ -113,118 +112,99 @@ def main(job, model):
     prompt = spec_job["out"].read_text()
     stamp = datetime.datetime.now().strftime("%Y%m%dT%H%M%S")
 
-    CELLS_ROOT.mkdir(parents=True, exist_ok=True)
-    # Every source the prompt was composed from goes in as evidence, so the
-    # measurement covers the bytes the run actually depended on.
-    built = cell_mod.build(cell_mod.CellSpec(
-        root=CELLS_ROOT / f"{job}.{model.replace(':', '-')}.{stamp}",
-        evidence_mode="copy",
-        evidence_sources=tuple(p for _, p in spec_job["sources"]),
-        # Strict: nothing runs in the cell, so nothing may write to it. Any
-        # change at all is a change that should not have happened.
-        scratch_prefixes=(),
-    ))
-    print(f"cell built at {built.root}", flush=True)
-
     report = None
-    try:
-        # The cell holds COPIES of the sources; the prompt was composed from the
-        # originals. Measuring only the cell would report CLEAN while the bytes
-        # the model actually read were edited underneath it — the seal watching
-        # the wrong files. `external_paths` exists for exactly this: the
-        # originals are measured alongside the cell, so a change to either side
-        # is a delta.
-        args = cell_mod.attest_args(built)
-        originals = tuple(str(p) for p in originals_for(spec_job))
-        pre = attest.freeze("pre", external_paths=originals, **args)
-        print(f"pre-attest frozen ({len(pre.entries)} paths in cell, "
-              f"{len(originals)} originals outside it)", flush=True)
+    # `attest.freeze` needs a directory to walk; nothing is ever put in this
+    # one and nothing is declared evidence — the real check is `external_paths`
+    # below. Self-cleaning, so there is nothing left to tear down or preserve.
+    with tempfile.TemporaryDirectory(prefix="blacksmith-scratch-") as scratch:
+        try:
+            originals = tuple(str(p) for p in originals_for(spec_job))
+            pre = attest.freeze("pre", scratch, external_paths=originals)
+            print(f"pre-attest frozen ({len(originals)} source files watched)", flush=True)
 
-        print(f"{model}: sending {len(prompt):,} chars — silent while it reasons",
-              flush=True)
-        run = occupant_bound.run(model, prompt)
-        print(f"first token {run.first_token_s:,.1f}s, "
-              f"final {run.final_token_s:,.1f}s, {len(run.response):,} reply chars, "
-              f"{len(run.thinking):,} reasoning chars",
-              flush=True)
-
-        post = attest.freeze("post", external_paths=originals, **args)
-        report = attest.compare(pre, post)
-        print(f"integrity: {report['integrity']} — {report['detail']}", flush=True)
-
-        if report["integrity"] not in DELTA_FOR:
-            raise SystemExit(
-                f"integrity is {report['integrity']}: {report['detail']}. No "
-                "evidence entry written — a record with an invented delta is "
-                "worse than no record.")
-
-        # The reply is written beside the record under the same naming
-        # convention run_bound.py uses, so both land in the same set.
-        reply = evidence_log.OUT_DIR / f"{job}.{model.replace(':', '-')}.{stamp}.reply.md"
-        reply.parent.mkdir(parents=True, exist_ok=True)
-        reply.write_text(run.response, encoding="utf-8")
-
-        # Reasoning goes to its own file, never into the reply — same rule
-        # run_bound.py follows and for the same reason: the reply is what
-        # quotes.py scans, and mixing the two would hand a checker the
-        # model's self-persuasion as if it were the answer. Only written
-        # when there was something to write (empty thinking gets no file).
-        think_path = None
-        if run.thinking:
-            think_path = reply.parent / (reply.stem.removesuffix(".reply") + ".thinking.md")
-            think_path.write_text(
-                f"# {job} · {model} · {stamp} — model reasoning\n\n"
-                "NOT the reply. Recorded so a truncated or empty reply can be "
-                "diagnosed against what the model actually spent its tokens on.\n\n"
-                "---\n\n" + run.thinking,
-                encoding="utf-8")
-
-        written = evidence_log.write(
-            job=job, model=model, timestamp=stamp,
-            launch=evidence_log.LaunchRecord(
-                launched_by=f"uid:{os.getuid()}",
-                started_at=datetime.datetime.now(datetime.UTC).isoformat(),
-                kernel_digest=digest(build_paste.KERNEL),
-                job_digest=digest(spec_job["job"]),
-                evidence_mode=built.spec.evidence_mode),
-            execution=evidence_log.Execution(
-                first_token=f"{run.first_token_s:.2f}s",
-                final_token=f"{run.final_token_s:.2f}s",
-                exit_code=run.exit_code if run.done_reason == "stop" else run.done_reason),
-            integrity=evidence_log.IntegrityReport(
-                makers_mark_pre=pre.root_hash(),
-                makers_mark_post=post.root_hash(),
-                delta=DELTA_FOR[report["integrity"]],
-                verdict="UNKNOWN"),
-            lesson=(
-                f"Bound occupant over HTTP, sealed cell at {built.root}, "
-                f"scratch declared empty. Integrity {report['integrity']}: "
-                f"{report['detail']}. Verdict UNKNOWN — gauge has no bundle or "
-                f"contract on this path and does not guess. Reply at "
-                f"{reply.name}, adjudicate with quotes.py before reading it."
-                + (f" Reasoning ({len(run.thinking):,} chars) at {think_path.name}."
-                   if think_path is not None else "")))
-        print(f"wrote {written.relative_to(build_paste.BS)}")
-        print(f"reply {reply.relative_to(build_paste.BS)}")
-        if think_path is not None:
-            print(f"reasoning {think_path.relative_to(build_paste.BS)}")
-    finally:
-        # Kept, not destroyed, unless the cell came back exactly as it went in.
-        # Tearing down on every path would delete the changed bytes at the one
-        # moment they are worth having: a MODIFIED verdict names *that* something
-        # changed, and only the cell itself shows *what*. `report` is unset if the
-        # failure came before the comparison, which is also a state to preserve.
-        if report is not None and report["integrity"] == attest.INTACT:
-            cell_mod.teardown(built.root, CELLS_ROOT)
-            print("cell torn down — nothing changed in it", flush=True)
-        else:
-            log_sterile_failure(job, model, stamp, built.root, report,
-                                note="run ended before the comparison was reached")
-            print(f"logged to {STERILE_FAILURES.name}", flush=True)
-            print(f"cell KEPT for inspection at {built.root}\n"
-                  f"  it is sealed read-only; remove it with:\n"
-                  f"    chmod -R u+w {built.root} && rm -rf {built.root}",
+            print(f"{model}: sending {len(prompt):,} chars — silent while it reasons",
                   flush=True)
+            run = occupant_bound.run(model, prompt)
+            print(f"first token {run.first_token_s:,.1f}s, "
+                  f"final {run.final_token_s:,.1f}s, {len(run.response):,} reply chars, "
+                  f"{len(run.thinking):,} reasoning chars",
+                  flush=True)
+
+            post = attest.freeze("post", scratch, external_paths=originals)
+            report = attest.compare(pre, post)
+            print(f"integrity: {report['integrity']} — {report['detail']}", flush=True)
+
+            if report["integrity"] not in DELTA_FOR:
+                raise SystemExit(
+                    f"integrity is {report['integrity']}: {report['detail']}. No "
+                    "evidence entry written — a record with an invented delta is "
+                    "worse than no record.")
+
+            # The reply is written beside the record under the same naming
+            # convention run_bound.py uses, so both land in the same set.
+            reply = evidence_log.OUT_DIR / f"{job}.{model.replace(':', '-')}.{stamp}.reply.md"
+            reply.parent.mkdir(parents=True, exist_ok=True)
+            reply.write_text(run.response, encoding="utf-8")
+
+            # Reasoning goes to its own file, never into the reply — same rule
+            # run_bound.py follows and for the same reason: the reply is what
+            # quotes.py scans, and mixing the two would hand a checker the
+            # model's self-persuasion as if it were the answer. Only written
+            # when there was something to write (empty thinking gets no file).
+            think_path = None
+            if run.thinking:
+                think_path = reply.parent / (reply.stem.removesuffix(".reply") + ".thinking.md")
+                think_path.write_text(
+                    f"# {job} · {model} · {stamp} — model reasoning\n\n"
+                    "NOT the reply. Recorded so a truncated or empty reply can be "
+                    "diagnosed against what the model actually spent its tokens on.\n\n"
+                    "---\n\n" + run.thinking,
+                    encoding="utf-8")
+
+            written = evidence_log.write(
+                job=job, model=model, timestamp=stamp,
+                launch=evidence_log.LaunchRecord(
+                    launched_by=f"uid:{os.getuid()}",
+                    started_at=datetime.datetime.now(datetime.UTC).isoformat(),
+                    kernel_digest=digest(build_paste.KERNEL),
+                    job_digest=digest(spec_job["job"]),
+                    evidence_mode="none"),
+                execution=evidence_log.Execution(
+                    first_token=f"{run.first_token_s:.2f}s",
+                    final_token=f"{run.final_token_s:.2f}s",
+                    exit_code=run.exit_code if run.done_reason == "stop" else run.done_reason),
+                integrity=evidence_log.IntegrityReport(
+                    makers_mark_pre=pre.root_hash(),
+                    makers_mark_post=post.root_hash(),
+                    delta=DELTA_FOR[report["integrity"]],
+                    verdict="UNKNOWN"),
+                lesson=(
+                    f"Bound occupant over HTTP, no cell (dropped 11 Aug, TODO !55) — "
+                    f"only the {len(originals)} real source files were watched. "
+                    f"Integrity {report['integrity']}: {report['detail']}. Verdict "
+                    f"UNKNOWN — gauge has no bundle or contract on this path and "
+                    f"does not guess. Reply at {reply.name}, adjudicate with "
+                    f"quotes.py before reading it."
+                    + (f" Reasoning ({len(run.thinking):,} chars) at {think_path.name}."
+                       if think_path is not None else "")))
+            print(f"wrote {written.relative_to(build_paste.BS)}")
+            print(f"reply {reply.relative_to(build_paste.BS)}")
+            if think_path is not None:
+                print(f"reasoning {think_path.relative_to(build_paste.BS)}")
+        finally:
+            # Guaranteed regardless of how the try block exits: an exception
+            # before `attest.compare` leaves `report` at None, and an UNKNOWN
+            # integrity raises SystemExit above before any explicit log call
+            # would run. Both are states worth a record, same as BYPASSED —
+            # the old cell-based version logged all three via this same
+            # unconditional finally; a single inline call after the SystemExit
+            # check would have silently dropped both, found on reread, not by
+            # running.
+            if report is None or report["integrity"] != attest.INTACT:
+                log_sterile_failure(
+                    job, model, stamp, report,
+                    note="run ended before the comparison was reached")
+                print(f"logged to {STERILE_FAILURES.name}", flush=True)
 
 
 if __name__ == "__main__":

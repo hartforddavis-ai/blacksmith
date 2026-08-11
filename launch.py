@@ -24,6 +24,21 @@ SPEC §2 rule 3: absent, not disabled. A filter has to enumerate every bad name
 and is wrong the day a new one appears; an allowlist starting from nothing is
 wrong only about names it was never given, which is the failure that shows up
 as the child not working rather than as the child seeing too much.
+
+CLAUDE_CONFIG_DIR — added 11 Aug 2026 (TODO !57, ASSUMPTIONS.md #23). A real
+`claude` runner writes its session state to `~/.claude`/`~/.claude.json` on
+startup; both names are in `cell.CELL_FORBIDDEN_NAMES` and refused however
+they're declared, so every launch in this tree used a stub until now. The
+fix does not loosen that refusal — `CELL_FORBIDDEN_NAMES` is untouched. It
+tells the runner to write its state somewhere else: a scratch-declared
+directory inside the cell, via the one env var Claude Code already honours
+for this. `plan()`'s `claude_config_dir` argument is confined to the cell's
+home and checked against the built cell's own declared `scratch_prefixes`
+before it is ever handed to the child — a value outside the cell, or inside
+it but undeclared, is refused before spawn. `BLOCKED_ENV_PREFIXES` still
+refuses `CLAUDE_CONFIG_DIR` (and everything else `CLAUDE*`) when offered
+through `extra_env`; the dedicated argument is the only path in, because it
+is the only path that gets the confinement check.
 """
 
 from __future__ import annotations
@@ -141,16 +156,31 @@ class LaunchPlan:
         }
 
 
-def sterile_env(home: Path, extra_env=None) -> dict:
+def sterile_env(home: Path, extra_env=None, claude_config_dir: Path | None = None) -> dict:
     """Build the child's environment from nothing.
 
-    `extra_env` is for what the runner genuinely needs and the caller can name.
-    Every entry is checked against BLOCKED_ENV_PREFIXES, so the allowlist cannot
-    be used to reintroduce the very thing the cell removed.
+    `claude_config_dir`, when given, is set as CLAUDE_CONFIG_DIR so a real
+    Claude Code runner writes its startup session state there instead of the
+    forbidden literal `~/.claude`/`~/.claude.json` (ASSUMPTIONS.md #23). Not
+    validated here — `plan` has already confined it to the cell and checked
+    it against the built cell's declared scratch before calling this.
+
+    `extra_env` is for what the runner genuinely needs and the caller can
+    name. Every entry is checked against BLOCKED_ENV_PREFIXES, so the
+    allowlist cannot be used to reintroduce the very thing the cell removed.
+    CLAUDE_CONFIG_DIR specifically must go through the dedicated argument
+    above, never here — that argument is what gets the confinement check.
     """
     env = {"HOME": str(home), "PATH": BASE_PATH}
+    if claude_config_dir is not None:
+        env["CLAUDE_CONFIG_DIR"] = str(claude_config_dir)
     for name, value in (extra_env or {}).items():
         upper = str(name).upper()
+        if upper == "CLAUDE_CONFIG_DIR":
+            raise LaunchError(
+                "CLAUDE_CONFIG_DIR must be passed as plan()'s/sterile_env()'s "
+                "claude_config_dir argument, not via extra_env — only that "
+                "argument gets the inside-the-cell confinement check")
         if any(upper.startswith(prefix) for prefix in BLOCKED_ENV_PREFIXES):
             raise LaunchError(
                 f"environment variable {name!r} reintroduces host context or a "
@@ -162,7 +192,8 @@ def sterile_env(home: Path, extra_env=None) -> dict:
 
 
 def plan(built_cell, runner, isolation_grade: str, system_prompt_file=None,
-         prompt_args=(), tools: str = DEFAULT_TOOLS, extra_env=None) -> LaunchPlan:
+         prompt_args=(), tools: str = DEFAULT_TOOLS, extra_env=None,
+         claude_config_dir=None) -> LaunchPlan:
     """Compose the launch. Nothing is spawned; this is the decision, written down.
 
     The flags follow SPEC §5 step 4. Their *semantics* are the runner's, not
@@ -185,6 +216,20 @@ def plan(built_cell, runner, isolation_grade: str, system_prompt_file=None,
     # sterile is a session SPEC §2 rule 6 says does not happen.
     cell_mod.require_sterile(built_cell)
 
+    resolved_config_dir = None
+    if claude_config_dir is not None:
+        # Must resolve inside the cell and be declared scratch — the point is
+        # the runner's own startup write lands somewhere the seal already
+        # expects a write, not somewhere new that reads as BYPASSED tampering.
+        resolved_config_dir = cell_mod.confine(built_cell.home, claude_config_dir)
+        rel = resolved_config_dir.relative_to(built_cell.home)
+        declared = built_cell.spec.scratch_prefixes
+        if not any(rel == Path(p) or Path(p) in rel.parents for p in declared):
+            raise LaunchError(
+                f"claude_config_dir {str(rel)!r} is not declared as scratch in "
+                f"the cell spec {declared!r}; build the cell with it declared "
+                "first, or the runner's own write will read as tampering")
+
     runner_path = Path(os.path.realpath(str(runner)))
     if not runner_path.is_file():
         raise LaunchError(f"runner {str(runner_path)!r} is not a regular file")
@@ -202,7 +247,8 @@ def plan(built_cell, runner, isolation_grade: str, system_prompt_file=None,
 
     return LaunchPlan(
         argv=tuple(argv),
-        env=sterile_env(built_cell.home, extra_env),
+        env=sterile_env(built_cell.home, extra_env,
+                        claude_config_dir=resolved_config_dir),
         cwd=str(built_cell.home),
         isolation_grade=isolation_grade,
         runner=inspect_runner(runner_path),

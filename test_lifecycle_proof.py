@@ -77,14 +77,15 @@ class LifecycleTestCase(unittest.TestCase):
         kwargs.setdefault("evidence_mode", "copy")
         return cell_mod.build(cell_mod.CellSpec(root=self.cells / "c", **kwargs))
 
-    def cycle(self, built, payload: str, timeout: float = 60):
+    def cycle(self, built, payload: str, timeout: float = 60, claude_config_dir=None):
         """Steps 3, 4, 6. Returns (launch record, integrity report)."""
         script = self.tmp / "payload.py"
         script.write_text(payload, encoding="utf-8")
         args = cell_mod.attest_args(built)
         pre = attest.freeze("pre", **args)
         plan = launch.plan(built, self.runner, launch.SAME_UID,
-                           prompt_args=[str(script)])
+                           prompt_args=[str(script)],
+                           claude_config_dir=claude_config_dir)
         record = launch.run(plan, timeout=timeout)
         post = attest.freeze("post", **args)
         return record, attest.compare(pre, post)
@@ -225,6 +226,50 @@ print('READ', open({str(outside / 'MEMORY.md')!r}).read())
 """)
         self.assertIn(str(built.home), record["stdout"])
         self.assertIn("READ host context", record["stdout"])
+        self.assertEqual(report["integrity"], attest.INTACT)
+
+
+class ClaudeConfigDirTests(LifecycleTestCase):
+    """TODO !57 / ASSUMPTIONS.md #23, closed for the redirected case.
+
+    `SealTests.test_the_seal_refuses_an_undeclared_write_and_the_cell_stays_
+    intact` above already proves the literal `~/.claude.json` write is
+    refused, unchanged by this fix — that guard is untouched. This class
+    proves the other half: the same kind of write, redirected to a
+    declared-scratch CLAUDE_CONFIG_DIR, succeeds and the cell still reads
+    INTACT — a real spawned child, not a mock.
+    """
+
+    def test_a_real_child_writes_its_config_under_claude_config_dir_and_stays_intact(self):
+        built = self.build(scratch_prefixes=("cfg",))
+        cfg = built.home / "cfg"
+        record, report = self.cycle(built, """
+import os
+path = os.path.join(os.environ['CLAUDE_CONFIG_DIR'], '.claude.json')
+open(path, 'w').write('{}')
+print('WROTE', os.environ['CLAUDE_CONFIG_DIR'])
+""", claude_config_dir=cfg)
+        self.assertEqual(record["exit_code"], 0, record["stderr"])
+        self.assertIn("WROTE", record["stdout"])
+        self.assertIn(str(cfg), record["stdout"])
+        self.assertEqual(report["integrity"], attest.INTACT)
+        self.assertEqual(report["deltas"], [])
+        self.assertEqual([d["path"] for d in report["scratch_deltas"]],
+                         ["home/cfg/.claude.json"])
+
+    def test_the_literal_home_claude_json_is_still_refused_even_with_config_dir_set(self):
+        # The redirect must not weaken the seal on the un-redirected path.
+        built = self.build(scratch_prefixes=("cfg",))
+        cfg = built.home / "cfg"
+        record, report = self.cycle(built, """
+import os
+try:
+    open(os.path.join(os.environ['HOME'], '.claude.json'), 'w').write('{}')
+    print('WROTE')
+except PermissionError as exc:
+    print('REFUSED', exc.errno)
+""", claude_config_dir=cfg)
+        self.assertIn("REFUSED", record["stdout"])
         self.assertEqual(report["integrity"], attest.INTACT)
 
 
