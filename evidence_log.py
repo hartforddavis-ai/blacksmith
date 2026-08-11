@@ -25,6 +25,7 @@ hold.
 
 from __future__ import annotations
 
+import hashlib
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -90,13 +91,13 @@ class Execution:
 
 @dataclass(frozen=True)
 class IntegrityReport:
-    cell_pre_hash: str
-    cell_post_hash: str
+    makers_mark_pre: str
+    makers_mark_post: str
     delta: str
     verdict: str
 
     def __post_init__(self):
-        for name in ("cell_pre_hash", "cell_post_hash"):
+        for name in ("makers_mark_pre", "makers_mark_post"):
             _require(getattr(self, name), name)
         if self.delta not in DELTAS:
             raise EvidenceLogError(f"delta must be one of {DELTAS}, got {self.delta!r}")
@@ -107,8 +108,8 @@ class IntegrityReport:
     def render(self) -> str:
         return (
             "## Integrity Report\n"
-            f"- cell pre-hash: {self.cell_pre_hash}\n"
-            f"- cell post-hash: {self.cell_post_hash}\n"
+            f"- maker's mark, pre: {self.makers_mark_pre}\n"
+            f"- maker's mark, post: {self.makers_mark_post}\n"
             f"- delta: {self.delta}\n"
             f"- verdict: {self.verdict}\n"
         )
@@ -155,6 +156,10 @@ def render(job: str, model: str, timestamp: str, launch: LaunchRecord,
     )
 
 
+def _seal_path(entry: Path) -> Path:
+    return entry.parent / (entry.name + ".sha256")
+
+
 def write(job: str, model: str, timestamp: str, launch: LaunchRecord,
           execution: Execution, integrity: IntegrityReport, lesson: str,
           out_dir: Path | None = None) -> Path:
@@ -164,6 +169,13 @@ def write(job: str, model: str, timestamp: str, launch: LaunchRecord,
     Refuses to overwrite an existing entry — each entry is frozen once
     written, the same rule `attest.Attestation` holds for a single
     measurement.
+
+    A `<name>.md.sha256` sidecar is written beside it, holding the sha256 of
+    the entry's exact bytes at write time. This does not prove the run was
+    genuine — it proves the entry hasn't been edited since. Same-UID
+    filesystem access is a real, named path (`launch.py`'s own docstring:
+    "everything the parent can reach, the child can reach"), and nothing
+    before this caught a post-write edit. `verify()` is the other half.
     """
     text = render(job, model, timestamp, launch, execution, integrity, lesson)
     target_dir = Path(out_dir) if out_dir is not None else OUT_DIR
@@ -174,4 +186,29 @@ def write(job: str, model: str, timestamp: str, launch: LaunchRecord,
         raise EvidenceLogError(
             f"evidence log entry {str(target)!r} already exists; refusing to overwrite")
     target.write_text(text, encoding="utf-8")
+    # Re-read rather than hash `text` from memory — the seal must certify
+    # what is actually on disk, not what was intended to be written. Same
+    # rule bundle.py states for contract_sha256: no module in this tree
+    # trusts a stored/in-memory value over the real bytes.
+    digest = hashlib.sha256(target.read_bytes()).hexdigest()
+    _seal_path(target).write_text(digest + "\n", encoding="utf-8")
     return target
+
+
+def verify(entry: Path) -> bool:
+    """Recompute the entry's sha256 and compare to its sidecar.
+
+    Raises EvidenceLogError if the sidecar is missing (an entry written
+    before this existed, or one that never went through `write()`) rather
+    than reporting a silent pass — a missing seal is not the same claim as
+    a matching one.
+    """
+    entry = Path(entry)
+    seal = _seal_path(entry)
+    if not entry.is_file():
+        raise EvidenceLogError(f"no such evidence log entry: {str(entry)!r}")
+    if not seal.is_file():
+        raise EvidenceLogError(f"no seal for {str(entry)!r}; cannot verify")
+    recorded = seal.read_text(encoding="utf-8").strip()
+    actual = hashlib.sha256(entry.read_bytes()).hexdigest()
+    return actual == recorded

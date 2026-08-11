@@ -33,8 +33,8 @@ Define evidence log schema as the formal proof chain that joins:
 - exit code: <code or timeout>
 
 ## Integrity Report
-- cell pre-hash: <sha256>
-- cell post-hash: <sha256>
+- maker's mark, pre: <sha256>
+- maker's mark, post: <sha256>
 - delta: <"CLEAN" or "MODIFIED">
 - verdict: <ACTIVE|FAILED|UNKNOWN|BYPASSED>
 

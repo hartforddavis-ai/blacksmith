@@ -29,7 +29,7 @@ def execution(**over):
 
 
 def integrity(**over):
-    kwargs = dict(cell_pre_hash="a" * 64, cell_post_hash="a" * 64,
+    kwargs = dict(makers_mark_pre="a" * 64, makers_mark_post="a" * 64,
                   delta="CLEAN", verdict="ACTIVE")
     kwargs.update(over)
     return ev.IntegrityReport(**kwargs)
@@ -64,7 +64,7 @@ class FieldValidationTests(unittest.TestCase):
 
     def test_integrity_rejects_empty_hash(self):
         with self.assertRaises(ev.EvidenceLogError):
-            integrity(cell_pre_hash="")
+            integrity(makers_mark_pre="")
 
 
 class RenderTests(unittest.TestCase):
@@ -138,6 +138,52 @@ class WriteTests(unittest.TestCase):
                            launch(), execution(), integrity(), "lesson",
                            out_dir=nested)
         self.assertTrue(target.is_file())
+
+
+class SealTests(unittest.TestCase):
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.out_dir = Path(self._tmp.name)
+        self.target = ev.write("verify", "qwen3.5:9b", "20260805T180000",
+                                launch(), execution(), integrity(), "lesson",
+                                out_dir=self.out_dir)
+
+    def tearDown(self):
+        self._tmp.cleanup()
+
+    def test_write_produces_a_seal_file(self):
+        seal = self.target.parent / (self.target.name + ".sha256")
+        self.assertTrue(seal.is_file())
+
+    def test_verify_passes_on_an_untouched_entry(self):
+        self.assertTrue(ev.verify(self.target))
+
+    def test_verify_fails_on_an_edited_entry(self):
+        # This is the case that mattered before this existed: a byte changed
+        # after write, and nothing said so.
+        text = self.target.read_text(encoding="utf-8")
+        self.target.write_text(text + "\ntampered\n", encoding="utf-8")
+        self.assertFalse(ev.verify(self.target))
+
+    def test_verify_fails_on_a_reverted_but_briefly_touched_entry(self):
+        # Guards against a same-length in-place edit slipping past a lazier
+        # check (e.g. size-only): change bytes, put the exact original text
+        # back — content hash catches it because it reads the real bytes,
+        # not a filesystem attribute.
+        original = self.target.read_bytes()
+        self.target.write_bytes(original[:-1] + b"X")
+        self.target.write_bytes(original)
+        self.assertTrue(ev.verify(self.target))  # reverted for real: passes
+
+    def test_verify_raises_on_missing_seal(self):
+        seal = self.target.parent / (self.target.name + ".sha256")
+        seal.unlink()
+        with self.assertRaises(ev.EvidenceLogError):
+            ev.verify(self.target)
+
+    def test_verify_raises_on_missing_entry(self):
+        with self.assertRaises(ev.EvidenceLogError):
+            ev.verify(self.out_dir / "no-such-entry.md")
 
 
 if __name__ == "__main__":

@@ -144,7 +144,8 @@ def main(job, model):
               flush=True)
         run = occupant_bound.run(model, prompt)
         print(f"first token {run.first_token_s:,.1f}s, "
-              f"final {run.final_token_s:,.1f}s, {len(run.response):,} chars",
+              f"final {run.final_token_s:,.1f}s, {len(run.response):,} reply chars, "
+              f"{len(run.thinking):,} reasoning chars",
               flush=True)
 
         post = attest.freeze("post", external_paths=originals, **args)
@@ -163,6 +164,21 @@ def main(job, model):
         reply.parent.mkdir(parents=True, exist_ok=True)
         reply.write_text(run.response, encoding="utf-8")
 
+        # Reasoning goes to its own file, never into the reply — same rule
+        # run_bound.py follows and for the same reason: the reply is what
+        # quotes.py scans, and mixing the two would hand a checker the
+        # model's self-persuasion as if it were the answer. Only written
+        # when there was something to write (empty thinking gets no file).
+        think_path = None
+        if run.thinking:
+            think_path = reply.parent / (reply.stem.removesuffix(".reply") + ".thinking.md")
+            think_path.write_text(
+                f"# {job} · {model} · {stamp} — model reasoning\n\n"
+                "NOT the reply. Recorded so a truncated or empty reply can be "
+                "diagnosed against what the model actually spent its tokens on.\n\n"
+                "---\n\n" + run.thinking,
+                encoding="utf-8")
+
         written = evidence_log.write(
             job=job, model=model, timestamp=stamp,
             launch=evidence_log.LaunchRecord(
@@ -176,8 +192,8 @@ def main(job, model):
                 final_token=f"{run.final_token_s:.2f}s",
                 exit_code=run.exit_code if run.done_reason == "stop" else run.done_reason),
             integrity=evidence_log.IntegrityReport(
-                cell_pre_hash=pre.root_hash(),
-                cell_post_hash=post.root_hash(),
+                makers_mark_pre=pre.root_hash(),
+                makers_mark_post=post.root_hash(),
                 delta=DELTA_FOR[report["integrity"]],
                 verdict="UNKNOWN"),
             lesson=(
@@ -185,9 +201,13 @@ def main(job, model):
                 f"scratch declared empty. Integrity {report['integrity']}: "
                 f"{report['detail']}. Verdict UNKNOWN — gauge has no bundle or "
                 f"contract on this path and does not guess. Reply at "
-                f"{reply.name}, adjudicate with quotes.py before reading it."))
+                f"{reply.name}, adjudicate with quotes.py before reading it."
+                + (f" Reasoning ({len(run.thinking):,} chars) at {think_path.name}."
+                   if think_path is not None else "")))
         print(f"wrote {written.relative_to(build_paste.BS)}")
         print(f"reply {reply.relative_to(build_paste.BS)}")
+        if think_path is not None:
+            print(f"reasoning {think_path.relative_to(build_paste.BS)}")
     finally:
         # Kept, not destroyed, unless the cell came back exactly as it went in.
         # Tearing down on every path would delete the changed bytes at the one
