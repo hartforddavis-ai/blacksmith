@@ -29,6 +29,7 @@ CORPUS = {"SPEC": quotes.normalise(
 
 def table(verdict: str, evidence: str) -> str:
     return (
+        "TOOLS HELD: <none>\n\n"
         "| Item | Ruled | Verdict | Evidence |\n"
         "|---|---|---|---|\n"
         f"| a thing | APPROVE | {verdict} | {evidence} |\n"
@@ -62,11 +63,36 @@ class CheckTests(unittest.TestCase):
                       '"Read-scope confinement ... capability absence"')
         self.assertEqual(quotes.check(reply, CORPUS), [])
 
+    def test_a_reply_with_no_engagement_line_is_refused_not_passed(self):
+        # !34: a cell where nothing ran is trivially delta-free upstream in
+        # attest.compare. Same gap, the reply's own side of it: an empty or
+        # never-generated reply has no first line to match, and must not
+        # read the same as a real reply that happens to have no rows yet.
+        findings = quotes.check("", CORPUS)
+        self.assertEqual([f["reason"] for f in findings], ["NO_ENGAGEMENT"])
+
+    def test_engagement_line_survives_markdown_emphasis(self):
+        # Every other match in this module runs through normalise() because
+        # markdown is the transport's, not the model's — a bolded
+        # declaration split across spans must still be recognised.
+        reply = "**TOOLS** **HELD**: none\n\n" + table("VERIFIED",
+            '"Read-scope confinement is policy denial"').split("\n\n", 1)[1]
+        self.assertEqual(quotes.check(reply, CORPUS), [])
+
+    def test_a_reply_that_skips_straight_to_rows_is_refused(self):
+        # K1 requires the declaration first, before anything else. A reply
+        # that ignores K1 but still produces a well-formed table must not
+        # pass just because the rows happen to check out.
+        reply = table("VERIFIED", '"Read-scope confinement is policy denial"')
+        reply = reply.split("\n\n", 1)[1]  # strip the TOOLS HELD line only
+        findings = quotes.check(reply, CORPUS)
+        self.assertEqual([f["reason"] for f in findings], ["NO_ENGAGEMENT"])
+
     def test_a_reply_with_no_ruled_rows_is_refused_not_passed(self):
         # A header-only run file reported clean before this: nothing was
         # compared, and the check said so as a pass. Same defect as
         # tests_pass certifying an empty suite, rebuilt here the same day.
-        findings = quotes.check("# verify\n\nTOOLS HELD: <none>\n", CORPUS)
+        findings = quotes.check("TOOLS HELD: <none>\n\n# verify\n", CORPUS)
         self.assertEqual([f["reason"] for f in findings], ["NO_ROWS"])
 
     def test_rows_that_are_not_verified_are_not_checked(self):

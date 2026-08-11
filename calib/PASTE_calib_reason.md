@@ -114,7 +114,7 @@ quoted span is not a positive verdict.
     JOB          JOB_calib_reason.md          sha256:e47d975d9418
 ```
 
-Sources, copied verbatim 2026-08-07:
+Sources, copied verbatim 2026-08-11:
 
 ```
     UNIT7        SOURCE_unit7.md              sha256:dc2907dcb0c6

@@ -41,6 +41,7 @@ class BoundRun:
     model: str
     prompt: str
     response: str
+    thinking: str
     first_token_s: float
     final_token_s: float
     exit_code: str
@@ -59,7 +60,7 @@ def run(model: str, prompt: str, timeout: float = 1800) -> BoundRun:
         OLLAMA,
         data=json.dumps({
             "model": model, "prompt": prompt, "stream": True,
-            "options": {"temperature": 0},
+            "options": {"temperature": 0, "num_ctx": 65536},
         }).encode(),
         headers={"Content-Type": "application/json"},
     )
@@ -67,6 +68,7 @@ def run(model: str, prompt: str, timeout: float = 1800) -> BoundRun:
     start = time.monotonic()
     first_token = None
     chunks = []
+    thoughts = []
     done_reason = ""
     try:
         with urllib.request.urlopen(req, timeout=timeout) as r:
@@ -75,6 +77,7 @@ def run(model: str, prompt: str, timeout: float = 1800) -> BoundRun:
                 if first_token is None:
                     first_token = time.monotonic() - start
                 chunks.append(chunk.get("response", ""))
+                thoughts.append(chunk.get("thinking") or "")
                 if chunk.get("done"):
                     done_reason = chunk.get("done_reason", "")
                     break
@@ -88,6 +91,7 @@ def run(model: str, prompt: str, timeout: float = 1800) -> BoundRun:
 
     return BoundRun(
         model=model, prompt=prompt, response="".join(chunks),
+        thinking="".join(thoughts),
         first_token_s=first_token, final_token_s=time.monotonic() - start,
         exit_code="0", done_reason=done_reason,
     )

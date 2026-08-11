@@ -1,0 +1,23 @@
+wrote PROMPT_VERIFY_PASTE.md (45,349 bytes)
+    KERNEL       KERNEL_bound.md              sha256:56656c7f065f
+    JOB          JOB_verify_ruling.md         sha256:05a260773679
+    LAW 1        claudes-law 1.md             sha256:97a392b40b55
+    LAW 2        claudes-law 2.md             sha256:936eebbb930e
+    LAW 3        claudes-law 3.md             sha256:092cbcdc3702
+    SPEC         SPEC.md                      sha256:dcf66a93a6a8
+    ASSUMPTIONS  ASSUMPTIONS.md               sha256:a548082b6a9e
+    RULING       BLACKSMITH_REDESIGN.md       sha256:577686d76f9b
+
+IF a SOURCES digest moved  → regenerate. Expected; sources change.
+IF the JOB digest moved    → a different task. Check it is the one you want.
+IF the KERNEL digest moved → the instrument changed.
+                             Law 1 ruling required before use.
+
+WHEN the reply lands   → python3 quotes.py runs/<the reply file>
+                         Checks every VERIFIED row quotes the pasted bytes.
+                         A reply that fails is discarded whole.
+gemma4:12b: sending 44,955 chars, temperature 0 …
+this stays silent while the model reasons. To watch it, in another pane:
+    python3.12 watch_bound.py verify gemma4:12b
+first token at 155s — prompt-eval done
+wrote runs/verify.gemma4-12b.20260811T164923.md  (7,954 reply chars, 60,229 reasoning chars)

@@ -130,14 +130,14 @@ VERIFIED n · MISQUOTED n · UNSUPPORTED n · MISSED n
     JOB          JOB_verify_ruling.md         sha256:05a260773679
 ```
 
-Sources, copied verbatim 2026-08-06:
+Sources, copied verbatim 2026-08-11:
 
 ```
     LAW 1        claudes-law 1.md             sha256:97a392b40b55
-    LAW 2        Claudes Law 2.txt            sha256:4a015fd59e40
-    LAW 3        Claudes law 3.md             sha256:092cbcdc3702
+    LAW 2        claudes-law 2.md             sha256:936eebbb930e
+    LAW 3        claudes-law 3.md             sha256:092cbcdc3702
     SPEC         SPEC.md                      sha256:dcf66a93a6a8
-    ASSUMPTIONS  ASSUMPTIONS.md               sha256:b2d3237a7bde
+    ASSUMPTIONS  ASSUMPTIONS.md               sha256:a548082b6a9e
     RULING       BLACKSMITH_REDESIGN.md       sha256:577686d76f9b
 ```
 
@@ -206,21 +206,18 @@ Cost of failure is impact × rate.
 When security and complexity conflict, keep the smallest boundary that blocks the demonstrated failure.
 ```
 
-### LAW 2 — Claudes Law 2.txt
+### LAW 2 — claudes-law 2.md
 
 ```
 ---
-
 CLAUDE'S LAW 2
 Minimum Robust Build Filter — v1.0
-
 ---
 
 PURPOSE
 
 Law 1 governs what may be designed.
 Law 2 governs what may be kept.
-
 It does not build. It does not accept by default. It reverts.
 
 ---
@@ -229,6 +226,12 @@ WORKING
 
 A thing works if it has been run and produced the required output on
 demand. Everything else is claimed and fails.
+
+---
+
+EVIDENCE
+
+Claims requiring evidence must provide it.
 
 ---
 
@@ -257,10 +260,8 @@ failures are demonstrated by default and need no further evidence:
 
 Assertion — the artifact is reported working without being run.
             Boundary: a run produces output, or the claim is void.
-
 Excess    — the artifact carries capability the task did not require.
             Boundary: unrequested capability is removed before acceptance.
-
 Accretion — failure is answered by addition.
             Boundary: the first repair is removal or revert, never a new layer.
 
@@ -272,7 +273,6 @@ FAILURE RESPONSE
 
 A failed build is reverted to the last passing state.
 It is not patched in place.
-
 A second failure of the same build removes the design that produced it,
 and the removal is a Law 1 decision, not a Law 2 one.
 
@@ -291,7 +291,7 @@ When a component fails, delete before you add.
 If it cannot be deleted, the dependency is the defect.
 ```
 
-### LAW 3 — Claudes law 3.md
+### LAW 3 — claudes-law 3.md
 
 ```
 # CLAUDE'S LAW 3
@@ -694,11 +694,32 @@ check supplies evidence.
     `scratch_prefixes` does not help because both names are in
     `CELL_FORBIDDEN_NAMES`, so `census` reports the cell non-sterile and
     `launch.plan`'s `require_sterile` refuses before spawning. Every launch in
-    this tree therefore uses a stub. Resolving it means deciding whether the
-    runner's own state directory counts as contamination — a definitional call
-    about what sterility means, adjacent to [SCOTT] ruling 3 on evidence
-    placement. Not decided here. **BLOCKS the step 1 proof against the real
-    runner; UNKNOWN.**
+    this tree therefore uses a stub.
+
+    **PARTIALLY RESOLVED 11 Aug 2026 (TODO !57).** Not by ruling on whether
+    `.claude`/`.claude.json` count as contamination — `FAILURE_LOG.md`'s
+    "step 3 is untestable until the owner rules" entry killed that framing
+    outright (Law 2: a step that can't run fails BUILT; Law 3: a fix
+    depending on someone else's ruling is one decision split into two
+    dependent steps). Instead: `launch.plan()` gained a `claude_config_dir`
+    argument, confined to the cell and checked against the built cell's own
+    declared `scratch_prefixes` before spawn. Set as `CLAUDE_CONFIG_DIR` in
+    the child's environment, it redirects a real Claude Code runner's startup
+    writes away from the forbidden literal path entirely — `CELL_FORBIDDEN_
+    NAMES` is untouched, and the collision this item names simply never
+    happens. Proven against a real spawned child in `test_lifecycle_proof.py`
+    (`ClaudeConfigDirTests`): a write under the redirected path lands as a
+    declared scratch delta and reads INTACT; the literal `~/.claude.json`
+    write is still refused, unchanged.
+
+    **What this does not prove.** No test here has ever run the actual
+    `claude` binary — every launch, including this one, uses a stub script
+    (see `test_lifecycle_proof.py`'s own module docstring). Whether the real
+    CLI honours `CLAUDE_CONFIG_DIR` as expected, and whether SPEC §5 step 4's
+    flags (`--safe-mode`, `--tools`) bind, are unproven — ASSUMPTIONS #19,
+    untouched by this fix. The kernel-grade contamination question for the
+    real runner also stays open on its own terms; this item only closes the
+    same-UID structural collision.**
 
 ## Out of scope for this remediation
 

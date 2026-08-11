@@ -61,6 +61,16 @@ MAX_GAP = 400
 
 VERDICT = "VERIFIED"
 
+# K1 in KERNEL_bound.md: "DECLARE every tool you hold. First line, before
+# anything else." Every real reply opens with this line; wording varies
+# ("TOOLS HELD: none" vs "TOOLS HELD: <none>") but the phrase does not — it
+# is fixed KERNEL text, not SOURCE, so checking for it cannot leak into what
+# a VERIFIED row is judged against (!34: a cell where nothing ran is
+# trivially delta-free upstream in attest.compare; this is the same gap
+# closed for the reply itself — a reply with no first line to match never
+# engaged with the protocol at all).
+ENGAGEMENT_MARKER = "TOOLS HELD"
+
 
 class QuoteError(ValueError):
     """The reply could not be read as a table of ruled rows."""
@@ -133,6 +143,24 @@ def occurs(quote: str, corpus: str) -> bool:
     return re.search(pattern, corpus, re.DOTALL) is not None
 
 
+def engaged(reply_text: str) -> bool:
+    """Does the reply's first non-blank line carry K1's required declaration?
+
+    An inert cell — nothing ran, or the model never received the KERNEL — has
+    no such line. This is a structural gate, same level as NO_ROWS below, and
+    checked before any row is read: it answers "did this reply engage with
+    the protocol at all", not "are its claims correct".
+    """
+    for line in reply_text.splitlines():
+        stripped = line.strip()
+        if stripped:
+            # Same normalise() every other match in this module trusts —
+            # markdown emphasis is the transport's, not the model's, and a
+            # bolded "**TOOLS** **HELD**" must still match.
+            return ENGAGEMENT_MARKER in normalise(stripped)
+    return False
+
+
 def check(reply_text: str, corpora: dict[str, str] | None = None,
           job: str = "verify") -> list[dict]:
     """Rule every VERIFIED row. Returns one finding per row that fails.
@@ -147,6 +175,11 @@ def check(reply_text: str, corpora: dict[str, str] | None = None,
     reply.
     """
     corpora = sources(job) if corpora is None else corpora
+    if not engaged(reply_text):
+        return [{"line": 0, "reason": "NO_ENGAGEMENT", "quote": "",
+                 "detail": "first line does not carry K1's required "
+                           f"{ENGAGEMENT_MARKER!r} declaration; nothing ran "
+                           "or nothing was received"}]
     ruled = rows(reply_text)
     if not ruled:
         return [{"line": 0, "reason": "NO_ROWS", "quote": "",
