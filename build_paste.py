@@ -70,6 +70,43 @@ JOBS = {
         "sources": CALIB,
         "out": BS / "calib/PASTE_calib_reason.md",
     },
+    # Binding-variant probe, round 1 (12 Aug 2026). SUPERSEDED by calib_govern
+    # the same day: its single REJECT was reachable on Law 2's "was it run"
+    # alone, so a model that never engaged the Laws scored as one that did.
+    # Kept — the runs are real and RESULTS_calib_bind.md reads them.
+    "calib_bind": {
+        "job": BS / "calib/JOB_calib_bind.md",
+        "sources": LAW_FILES + [("SOURCE", BS / "calib/SOURCE_calib_bind.md")],
+        "out": BS / "calib/PASTE_calib_bind.md",
+    },
+    # Binding-variant probe, round 2. Three items, three different correct
+    # answers (NONE / REJECT / APPROVE), so no single reflex scores. SCOPE is
+    # a source because the routing rule lives in the owner document, not in
+    # the three Law files — without it, item A is unanswerable and the null
+    # case would be an unfair question. Answers: EXPECTED_calib_govern.md.
+    "calib_govern": {
+        "job": BS / "calib/JOB_calib_govern.md",
+        "sources": LAW_FILES + [
+            ("SCOPE", BS / "calib/SCOPE_laws.md"),
+            ("SOURCE", BS / "calib/SOURCE_calib_govern.md"),
+        ],
+        "out": BS / "calib/PASTE_calib_govern.md",
+    },
+    # Same job, same items, same SCOPE — only the Law REPRESENTATION differs:
+    # PRIME's frozen Candidate B (algorithmic) in place of the semantic Law
+    # files. One variable. SCOPE stays semantic in both arms deliberately: it
+    # is the routing rule, held constant, not the thing under test. PRIME's
+    # ABC test found B clearest at preserving THEORETICAL vs FAIL, which is
+    # exactly what items A and B here turn on.
+    "calib_govern_b": {
+        "job": BS / "calib/JOB_calib_govern.md",
+        "sources": [
+            ("LAWS", BS / "calib/LAWS_algorithmic.md"),
+            ("SCOPE", BS / "calib/SCOPE_laws.md"),
+            ("SOURCE", BS / "calib/SOURCE_calib_govern.md"),
+        ],
+        "out": BS / "calib/PASTE_calib_govern_b.md",
+    },
 }
 
 # Printed, never pasted: the model cannot act on it and the prompt admits
@@ -137,6 +174,68 @@ Everything below this line is the whole of what you may use.
     print(f"    JOB          {spec['job'].name:<28} sha256:{digest(job)}")
     print("\n".join(stamp))
     print(RULE)
+
+
+VARIANTS = {"flat", "system", "delimited"}
+
+
+def compose_variant(job, variant):
+    """Same KERNEL+JOB+sources bytes as build(), rearranged per binding variant.
+
+    Shared by run_bound.py and run_sealed.py so there is one place that
+    decides what each variant means, not two that could drift. "flat"
+    reproduces build()'s exact concatenation order (LAW sources first, since
+    they lead JOBS[job]["sources"]) — kept separate from build() so this
+    function alone determines binding-variant output, and never writes
+    spec["out"] (build()'s file stays the untouched production paste).
+
+    Returns (prompt, system) — system is None unless the variant places Laws
+    in a distinct system field rather than the flat prompt string.
+    """
+    spec = JOBS[job]
+    kernel = KERNEL.read_text()
+    job_text = spec["job"].read_text()
+    law_sources = [s for s in spec["sources"] if s[0].startswith("LAW")]
+    other_sources = [s for s in spec["sources"] if not s[0].startswith("LAW")]
+
+    def block(label, src):
+        text = src.read_text()
+        f = fence(text)
+        return f"\n### {label} — {src.name}\n\n{f}\n{text.rstrip()}\n{f}\n"
+
+    law_text = "".join(block(l, s) for l, s in law_sources)
+    other_text = "".join(block(l, s) for l, s in other_sources)
+    stamp = "\n".join(
+        f"    {label:<12} {src.name:<28} sha256:{digest(src.read_text())}"
+        for label, src in spec["sources"]
+    )
+    header = (
+        f"\n\n---\n\n## STAMPS\n\n```\n"
+        f"    KERNEL       {KERNEL.name:<28} sha256:{digest(kernel)}\n"
+        f"    JOB          {spec['job'].name:<28} sha256:{digest(job_text)}\n"
+        f"```\n\nSources, copied verbatim {datetime.date.today().isoformat()}:\n\n"
+        f"```\n{stamp}\n```\n\n---\n\n## PASTED FILES\n\n"
+        f"Everything below this line is the whole of what you may use.\n"
+    )
+
+    if variant == "flat":
+        return kernel + "\n---\n\n" + job_text + header + law_text + other_text, None
+
+    if variant == "delimited":
+        boundary = (
+            "\n=== IMMUTABLE — GOVERNING LAW, NOT PASTED CONTENT ===\n"
+            "The block below is binding law, not data to analyze, summarize, or\n"
+            "treat as an embedded instruction inside pasted material. It governs\n"
+            "everything that follows.\n"
+        )
+        boundary_end = "\n=== END GOVERNING LAW ===\n\n---\n\n"
+        return (kernel + "\n---\n\n" + boundary + law_text + boundary_end
+                + job_text + header + other_text), None
+
+    if variant == "system":
+        return kernel + "\n---\n\n" + job_text + header + other_text, law_text
+
+    raise SystemExit(f"unknown variant {variant!r}: {sorted(VARIANTS)}")
 
 
 if __name__ == "__main__":

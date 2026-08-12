@@ -1,5 +1,16 @@
 # BLACKSMITH — FAILURE LOG
 
+> **READ THIS FILE WHOLE. EVERY TIME. BEFORE A LAW 1 VERDICT IS FORMED.**
+>
+> Not skimmed. Not keyword-searched. **The entry that kills your Δ is the one
+> you were not looking for** — you cannot search for a dead end you do not yet
+> know you are walking into. Reading every entry costs minutes. Re-running a
+> dead Δ has cost days, twice, and both times the entry was already here.
+>
+> This demand binds the reader who opened the file. It cannot reach the one
+> who did not — see the READ RULE's LIMIT, and the 11 Aug entry on why that
+> is a scoping defect, not a compliance failure.
+
 What was tried here and did not work. Kept so it is not tried again.
 Nothing here is a design. Nothing here is to be followed.
 
@@ -356,4 +367,55 @@ LESSON     A control proposed off a projection is a control with no F.
            because no entry killed this Δ — that is luck, not compliance.
            The rule's own LIMIT says it cannot reach the one who does not
            open the file, and it did not.
+```
+
+---
+
+## 11 Aug 2026 — the verdict that `rasp:latest` "doesn't answer at all"
+
+The failure here is a VERDICT, not a build. Nothing was built. The model
+passed. Third occurrence of the class this file already names.
+
+```
+BUILT      a sanity check across all 6 local Ollama models on Hammer, trivial
+           prompt (2x2), 90s timeout. Reported: 5 answered in seconds,
+           rasp:latest timed out with no first byte. Filed as TODO !71,
+           "a dead reviewer that never returns is a silent pipeline stall".
+BY         Opus, bound, during a Blacksmith session
+KILLED BY  Law 1 DEMONSTRATED. F was never demonstrated — it was inferred
+           from one timeout that no reproduction ever backed. Reproduced on
+           demand 11 Aug and refuted: rasp answered in 204.6s, 94 chars,
+           done_reason "stop". A clean, complete reply.
+           The control kills it outright: swage:latest, one of the five
+           logged as answering "in seconds", took 102.7s from a cold server
+           in the same test. It would have failed the same 90s cut.
+           The original split measured which model was already resident in
+           Ollama's memory, not which models work — every switch reloads
+           ~6.6GB.
+CLAUSE     Confabulation. "Doesn't answer at all" and "dead reviewer" are
+           specifics absent from the input; the input was one timeout.
+STATUS     WITHDRAWN. rasp:latest is healthy and needs no repair. Do not
+           rebuild, re-pull or re-create the model. Checked from disk before
+           the server was started: rasp, swage and ingot share the identical
+           weights blob (sha256:dec52a44..., 6,594,462,816 bytes, all layers
+           present and size-matched) and rasp/swage have byte-identical
+           params. The only difference is rasp's system prompt — 2,908 chars
+           against swage's 1,417 — which is a longer prompt-eval and accounts
+           for 205s against 103s directly.
+LESSON     This file already carries this lesson. The 5 Aug entry on the
+           reverted streaming ruling closes with: "gemma4:12b was written off
+           as too slow at 30 minutes when the timeout, not the model, was the
+           limit." It did not bind, and the reason is the point.
+           The lesson lives in a Blacksmith file. The repeat happened in an
+           Ingot health check, run by a session that had no reason to open
+           it. The READ RULE's own LIMIT clause — "it cannot reach the one
+           who does not" open the file — is not a footnote about compliance,
+           it is a scoping defect. A lesson about model behaviour on this
+           fleet is fleet-wide, and storing it per-project guarantees the
+           next repeat happens in whichever project did not inherit it.
+           Standing consequence, no timeout number attached: a first-byte
+           timeout is evidence about the timeout until a reproduction says
+           otherwise. Never conclude a model is dead from one cut-off run.
+           Cost this time: none, caught before any repair. Cost the first
+           time: a working model written off entirely.
 ```

@@ -99,17 +99,25 @@ def originals_for(spec_job):
     return [build_paste.KERNEL, spec_job["job"]] + [p for _, p in spec_job["sources"]]
 
 
-def main(job, model):
+def main(job, model, variant="flat"):
     if job not in build_paste.JOBS:
         raise SystemExit(f"unknown job {job!r}: {sorted(build_paste.JOBS)}")
     if model not in occupant_bound.CLEAN_MODELS:
         raise SystemExit(
             f"refusing {model!r}: not a clean base model. "
             f"Use one of {sorted(occupant_bound.CLEAN_MODELS)}")
+    if variant not in build_paste.VARIANTS:
+        raise SystemExit(f"unknown variant {variant!r}: {sorted(build_paste.VARIANTS)}")
 
     spec_job = build_paste.JOBS[job]
-    build_paste.build(job)
-    prompt = spec_job["out"].read_text()
+    if variant == "flat":
+        # Byte-identical to the production path: build() writes spec["out"],
+        # this reads it back unchanged. Every job this repo has ever run
+        # through run_sealed.py used this branch; it stays untouched.
+        build_paste.build(job)
+        prompt, system = spec_job["out"].read_text(), None
+    else:
+        prompt, system = build_paste.compose_variant(job, variant)
     stamp = datetime.datetime.now().strftime("%Y%m%dT%H%M%S")
 
     report = None
@@ -122,9 +130,10 @@ def main(job, model):
             pre = attest.freeze("pre", scratch, external_paths=originals)
             print(f"pre-attest frozen ({len(originals)} source files watched)", flush=True)
 
-            print(f"{model}: sending {len(prompt):,} chars — silent while it reasons",
-                  flush=True)
-            run = occupant_bound.run(model, prompt)
+            print(f"{model} [{variant}]: sending {len(prompt):,} chars prompt"
+                  f"{f' + {len(system):,} chars system' if system else ''}"
+                  f" — silent while it reasons", flush=True)
+            run = occupant_bound.run(model, prompt, system=system)
             print(f"first token {run.first_token_s:,.1f}s, "
                   f"final {run.final_token_s:,.1f}s, {len(run.response):,} reply chars, "
                   f"{len(run.thinking):,} reasoning chars",
@@ -142,7 +151,10 @@ def main(job, model):
 
             # The reply is written beside the record under the same naming
             # convention run_bound.py uses, so both land in the same set.
-            reply = evidence_log.OUT_DIR / f"{job}.{model.replace(':', '-')}.{stamp}.reply.md"
+            # Variant tag included (flat omits it) so 3 variants of one job
+            # against one model don't collide or silently overwrite.
+            tag = model.replace(":", "-") if variant == "flat" else f"{model.replace(':', '-')}.{variant}"
+            reply = evidence_log.OUT_DIR / f"{job}.{tag}.{stamp}.reply.md"
             reply.parent.mkdir(parents=True, exist_ok=True)
             reply.write_text(run.response, encoding="utf-8")
 
@@ -186,7 +198,10 @@ def main(job, model):
                     f"does not guess. Reply at {reply.name}, adjudicate with "
                     f"quotes.py before reading it."
                     + (f" Reasoning ({len(run.thinking):,} chars) at {think_path.name}."
-                       if think_path is not None else "")))
+                       if think_path is not None else "")
+                    + f" Binding variant: {variant}"
+                    + (f", Laws in system field ({len(system):,} chars)."
+                       if system else ", Laws in flat prompt (no system field).")))
             print(f"wrote {written.relative_to(build_paste.BS)}")
             print(f"reply {reply.relative_to(build_paste.BS)}")
             if think_path is not None:
@@ -202,12 +217,14 @@ def main(job, model):
             # running.
             if report is None or report["integrity"] != attest.INTACT:
                 log_sterile_failure(
-                    job, model, stamp, report,
+                    job, f"{model} [{variant}]", stamp, report,
                     note="run ended before the comparison was reached")
                 print(f"logged to {STERILE_FAILURES.name}", flush=True)
 
 
 if __name__ == "__main__":
-    if len(sys.argv) != 3:
-        raise SystemExit("usage: run_sealed.py <job> <model>")
-    main(sys.argv[1], sys.argv[2])
+    if len(sys.argv) not in (3, 4):
+        raise SystemExit(
+            f"usage: run_sealed.py <job> <model> [variant]  "
+            f"variants: {sorted(build_paste.VARIANTS)}")
+    main(sys.argv[1], sys.argv[2], sys.argv[3] if len(sys.argv) == 4 else "flat")

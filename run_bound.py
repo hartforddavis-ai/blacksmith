@@ -31,36 +31,51 @@ def compose(job):
     return spec["out"].read_text(), spec
 
 
+VARIANTS = build_paste.VARIANTS  # single source of what a variant means — build_paste.compose_variant
+
+
 def secs(ns):
     return "?" if ns is None else f"{ns / 1e9:,.0f}s"
 
 
-def main(job, model):
+def main(job, model, variant="flat"):
     if model not in CLEAN:
         raise SystemExit(f"refusing {model!r}: not a clean base model. Use one of {sorted(CLEAN)}")
     if job not in build_paste.JOBS:
         raise SystemExit(f"unknown job {job!r}: {sorted(build_paste.JOBS)}")
+    if variant not in VARIANTS:
+        raise SystemExit(f"unknown variant {variant!r}: {sorted(VARIANTS)}")
 
-    prompt, _ = compose(job)
+    if variant == "flat":
+        prompt, _ = compose(job)
+        system = None
+    else:
+        prompt, system = build_paste.compose_variant(job, variant)
+    payload = {
+        "model": model,
+        "prompt": prompt,
+        "stream": True,
+        # These models reason before replying whether asked or not (59 tokens
+        # to emit "OK"). Unasked, that stream is discarded and a working run
+        # writes nothing — which is what got gemma4 killed by hand three times.
+        "think": True,
+        "options": {"temperature": 0, "num_ctx": 65536},
+    }
+    if system is not None:
+        payload["system"] = system
     req = urllib.request.Request(
         OLLAMA,
-        data=json.dumps({
-            "model": model,
-            "prompt": prompt,
-            "stream": True,
-            # These models reason before replying whether asked or not (59 tokens
-            # to emit "OK"). Unasked, that stream is discarded and a working run
-            # writes nothing — which is what got gemma4 killed by hand three times.
-            "think": True,
-            "options": {"temperature": 0, "num_ctx": 65536},
-        }).encode(),
+        data=json.dumps(payload).encode(),
         headers={"Content-Type": "application/json"},
     )
 
     OUT.mkdir(exist_ok=True)
     stamp = datetime.datetime.now().strftime("%Y%m%dT%H%M%S")
-    dest = OUT / f"{job}.{model.replace(':', '-')}.{stamp}.md"
-    print(f"{model}: sending {len(prompt):,} chars, temperature 0 …", flush=True)
+    tag = model.replace(":", "-") if variant == "flat" else f"{model.replace(':', '-')}.{variant}"
+    dest = OUT / f"{job}.{tag}.{stamp}.md"
+    print(f"{model} [{variant}]: sending {len(prompt):,} chars prompt"
+          f"{f' + {len(system):,} chars system' if system else ''}, temperature 0 …",
+          flush=True)
     # This goes quiet for minutes while the model reasons. Say so here, with the
     # command — the watcher existing was not enough to stop a working run being
     # killed by hand on 5 Aug (FAILURE_LOG.md).
@@ -83,9 +98,10 @@ def main(job, model):
     with dest.open("w") as out:
         out.write(
             f"# {job} · {model} · {stamp}\n\n"
+            f"variant:       {variant}\n"
             f"prompt sha256: {hashlib.sha256(prompt.encode()).hexdigest()[:12]}\n"
             f"prompt chars:  {len(prompt):,}\n"
-            f"system prompt: none\n\n---\n\n"
+            f"system prompt: {'none' if system is None else f'{len(system):,} chars, sha256:{hashlib.sha256(system.encode()).hexdigest()[:12]}'}\n\n---\n\n"
         )
         out.flush()
         # Nothing arrives until prompt-eval ends, so the first line dates it.
@@ -148,6 +164,6 @@ def main(job, model):
 
 
 if __name__ == "__main__":
-    if len(sys.argv) != 3:
-        raise SystemExit("usage: run_bound.py <job> <model>")
-    main(sys.argv[1], sys.argv[2])
+    if len(sys.argv) not in (3, 4):
+        raise SystemExit(f"usage: run_bound.py <job> <model> [variant]  variants: {sorted(VARIANTS)}")
+    main(sys.argv[1], sys.argv[2], sys.argv[3] if len(sys.argv) == 4 else "flat")

@@ -46,22 +46,39 @@ class BoundRun:
     final_token_s: float
     exit_code: str
     done_reason: str
+    system: str | None = None
 
 
-def run(model: str, prompt: str, timeout: float = 1800) -> BoundRun:
-    """POST `prompt` to a local, clean model and collect the full response."""
+def run(model: str, prompt: str, timeout: float = 1800, system: str | None = None) -> BoundRun:
+    """POST `prompt` to a local, clean model and collect the full response.
+
+    `system`, when given, goes in Ollama's own `system` field — a channel
+    distinct from `prompt`, still local, still no tool surface.
+
+    `think` is always requested (Temper found this missing 12 Aug 2026,
+    against run_bound.py's own comment on the same fact): these models
+    reason before replying whether asked or not, and unasked, that stream is
+    discarded — not merged into the reply, just thrown away, spent as wall
+    time nobody can account for. `BoundRun.thinking` has captured
+    `chunk.get("thinking")` since this function existed; without the flag
+    that field could only ever be empty. Every prior run_sealed.py run,
+    including this session's three, has this gap.
+    """
     if model not in CLEAN_MODELS:
         raise OccupantError(
             f"refusing {model!r}: not a clean base model. Use one of {sorted(CLEAN_MODELS)}")
     if not isinstance(prompt, str) or not prompt.strip():
         raise OccupantError("prompt must be a non-empty string")
 
+    payload = {
+        "model": model, "prompt": prompt, "stream": True, "think": True,
+        "options": {"temperature": 0, "num_ctx": 65536},
+    }
+    if system is not None:
+        payload["system"] = system
     req = urllib.request.Request(
         OLLAMA,
-        data=json.dumps({
-            "model": model, "prompt": prompt, "stream": True,
-            "options": {"temperature": 0, "num_ctx": 65536},
-        }).encode(),
+        data=json.dumps(payload).encode(),
         headers={"Content-Type": "application/json"},
     )
 
@@ -93,7 +110,7 @@ def run(model: str, prompt: str, timeout: float = 1800) -> BoundRun:
         model=model, prompt=prompt, response="".join(chunks),
         thinking="".join(thoughts),
         first_token_s=first_token, final_token_s=time.monotonic() - start,
-        exit_code="0", done_reason=done_reason,
+        exit_code="0", done_reason=done_reason, system=system,
     )
 
 

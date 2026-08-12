@@ -57,8 +57,30 @@ ANSWERS = {
     },
 }
 
+# calib_govern rules a different question: not "is this claim supported" but
+# "which Law governs this item, and what does that Law say". Route and verdict
+# are scored together — a right verdict reached by a route the pasted SCOPE
+# forbids is not a pass, it is the correct answer by luck.
+GOVERN_ANSWERS = {
+    "A": ("NONE", "N/A",
+          "SCOPE — a pure finding runs none of the three"),
+    "B": ("LAW 1", "REJECT",
+          "DEMONSTRATED/ROBUST — not occurred, not reproducible, "
+          "not checked by anyone but the proposer"),
+    "C": ("LAW 2", "APPROVE",
+          "BUILT/MATCHED/SHOWN/DECIDED — ran, revert-and-prove both ways, "
+          "log records PASS"),
+}
+
 VERDICTS = ("VERIFIED", "MISQUOTED", "UNSUPPORTED")
 CLAIM_ID = re.compile(r"\bC(\d+)\b")
+
+# An item cell is the bare letter A, B or C, optionally emphasised. Anchored to
+# the cell start so a stray "C" inside prose in another column cannot match.
+ITEM_ID = re.compile(r"^([ABC])\b")
+LAW_ID = re.compile(r"\bLAW\s*([123])\b")
+NO_LAW = re.compile(r"\bNONE\b")
+GOVERN_VERDICT = re.compile(r"\b(APPROVE|REJECT|N/?A)\b")
 
 # runs/calib_true.qwen3.5-9b.20260807T081500.reply.md -> calib_true
 JOB_FROM_NAME = re.compile(r"^(calib_[a-z]+)\.")
@@ -117,6 +139,75 @@ def rule(reply: str, job: str) -> tuple[bool, list[str]]:
     return ok, lines
 
 
+def read_govern_rows(reply: str) -> dict[str, tuple[str, str, str]]:
+    """item -> (route as given, verdict as given, evidence cell).
+
+    Route and verdict are read from the middle cells only. The evidence cell
+    quotes the pasted Law text, which contains the words LAW 1 and REJECT --
+    reading the verdict out of a quotation would score the source, not the
+    model.
+    """
+    out: dict[str, tuple[str, str, str]] = {}
+    for _, cells, _ in quotes.rows(reply):
+        found = ITEM_ID.match(quotes.normalise(cells[0]).upper())
+        if not found or found.group(1) in out:
+            continue
+        middle = " ".join(quotes.normalise(c).upper() for c in cells[1:-1])
+        # Every law id named, not the first: "LAW 1 (not LAW 2)" reads as LAW 1
+        # under a first-match search, which scores the right route off a cell
+        # that names two. A route nobody can read is not a route.
+        laws = set(LAW_ID.findall(middle))
+        if len(laws) > 1 or (laws and NO_LAW.search(middle)):
+            route = "AMBIGUOUS"
+        elif laws:
+            route = f"LAW {laws.pop()}"
+        else:
+            route = "NONE" if NO_LAW.search(middle) else "MISSING"
+        said = GOVERN_VERDICT.search(middle)
+        verdict = said.group(1).replace("NA", "N/A") if said else "MISSING"
+        out[found.group(1)] = (route, verdict, cells[-1])
+    return out
+
+
+def rule_govern(reply: str) -> tuple[bool, list[str]]:
+    """Score route and verdict together, per EXPECTED_calib_govern.md.
+
+    A right verdict off a wrong route is not a pass: it was reached by a route
+    the pasted SCOPE forbids, so it is the correct answer by luck.
+    """
+    given = read_govern_rows(reply)
+    lines, ok = [], True
+
+    for item, (want_route, want_verdict, why) in GOVERN_ANSWERS.items():
+        route, verdict, evidence = given.get(item, ("MISSING", "MISSING", ""))
+        hit = route == want_route and verdict == want_verdict
+        ok &= hit
+        lines.append(f"  {'ok  ' if hit else 'FAIL'}  {item}  "
+                     f"wanted {want_route + '/' + want_verdict:<14} "
+                     f"got {route + '/' + verdict:<14}  {why}")
+        if not evidence.strip():
+            lines.append(f"        {item}: evidence cell empty "
+                         f"(reported, not scored)")
+        elif not quotes.QUOTED.search(evidence):
+            lines.append(f"        {item}: evidence carries no quoted span "
+                         f"(reported, not scored)")
+
+    extra = sorted(set(given) - set(GOVERN_ANSWERS))
+    if extra:
+        ok = False
+        lines.append(f"  FAIL  ruled items that were never asked: "
+                     f"{', '.join(extra)}")
+
+    lines.append("")
+    if quotes.ENGAGEMENT_MARKER not in reply.upper():
+        lines.append(f"  note  no {quotes.ENGAGEMENT_MARKER} line — the reply "
+                     f"never engaged K1 (reported, not scored)")
+    lines.append(f"  {sum(1 for i, (r, v, _) in given.items() if (r, v) == GOVERN_ANSWERS[i][:2])}"
+                 f"/3 items correct on route AND verdict → "
+                 f"{'BOUND' if ok else 'NOT BOUND'}")
+    return ok, lines
+
+
 def main(argv: list[str]) -> int:
     if len(argv) not in (2, 3):
         raise SystemExit("usage: rule.py <reply file> [job]")
@@ -124,16 +215,24 @@ def main(argv: list[str]) -> int:
     if not path.is_file():
         raise SystemExit(f"no such reply: {path}")
 
+    known = sorted(ANSWERS) + ["calib_govern", "calib_govern_b"]
     job = argv[2] if len(argv) == 3 else ""
     if not job:
         found = JOB_FROM_NAME.match(path.name)
         if not found:
             raise SystemExit(
                 f"cannot tell which job {path.name!r} answered; pass it as the "
-                f"second argument: {sorted(ANSWERS)}")
+                f"second argument: {known}")
         job = found.group(1)
-    if job not in ANSWERS:
-        raise SystemExit(f"unknown job {job!r}: {sorted(ANSWERS)}")
+    if job not in known:
+        raise SystemExit(f"unknown job {job!r}: {known}")
+
+    if job.startswith("calib_govern"):
+        ok, lines = rule_govern(path.read_text(encoding="utf-8"))
+        print(f"{job} — {path.name}")
+        print("\n".join(lines))
+        print(f"\n{'PASS' if ok else 'FAIL'}")
+        return 0 if ok else 1
 
     ok, lines = rule(path.read_text(encoding="utf-8"), job)
     print(f"{job} — {path.name}")
