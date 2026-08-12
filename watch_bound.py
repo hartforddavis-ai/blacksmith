@@ -112,7 +112,20 @@ def _tail(path, size, window=4096):
         return f.read().decode(errors="ignore")
 
 
+def _seal_path(path):
+    return path.parent / (path.name + ".sha256")
+
+
 def is_done(path, size):
+    """True on either completion signal a primary .md file can carry:
+    run_bound.py's own footer text, or a sibling `<name>.md.sha256` seal —
+    evidence_log.write() (run_sealed.py's path, e.g. calib_bind) writes that
+    seal only once, after the entry is fully rendered, so its mere presence
+    is as reliable a completion signal as the footer text is for its own
+    producer. Neither replaces the other: they come from different writers
+    and a file only ever carries the one its own producer writes."""
+    if _seal_path(path).exists():
+        return True
     if size < len(DONE_MARKER):
         return False
     return DONE_MARKER in _tail(path, size)

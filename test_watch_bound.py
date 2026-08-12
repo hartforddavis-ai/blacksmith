@@ -153,10 +153,66 @@ class StallDetectionTests(unittest.TestCase):
         self.assertFalse(wb.has_stalled(_FakePath(text), len(text)))
 
 
+class SealFileCompletionTests(unittest.TestCase):
+    """run_sealed.py's evidence_log.write() (e.g. calib_bind) never appends
+    run_bound.py's footer text to its primary .md — it signals completion
+    with a sibling <name>.md.sha256 instead. is_done() must recognize that
+    second signal without needing the footer, and must not be fooled into
+    firing early when only the primary file exists."""
+
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.dir = Path(self._tmp.name)
+
+    def tearDown(self):
+        self._tmp.cleanup()
+
+    def test_is_done_true_when_sha256_seal_sibling_exists(self):
+        primary = self.dir / "calib_bind.gemma4-12b-it-qat.20260812T073935.md"
+        text = "# calib_bind · gemma4:12b-it-qat · 20260812T073935\n\nno footer here\n"
+        primary.write_text(text)
+        (self.dir / (primary.name + ".sha256")).write_text("deadbeef\n")
+        self.assertTrue(wb.is_done(primary, len(text)))
+
+    def test_is_done_false_without_seal_or_footer(self):
+        primary = self.dir / "calib_bind.gemma4-12b-it-qat.20260812T073935.md"
+        text = "# calib_bind · gemma4:12b-it-qat · 20260812T073935\n\nstill running\n"
+        primary.write_text(text)
+        self.assertFalse(wb.is_done(primary, len(text)))
+
+    def test_is_done_still_true_on_bound_footer_with_no_seal(self):
+        # The other signal must keep working unchanged for run_bound.py's
+        # own files, which never get a .sha256 sibling.
+        primary = self.dir / "verify.gemma4-12b.20260812T101010.md"
+        text = ("some header\n\nfull reply\n\n---\n\n"
+                "prompt eval: 100 tok in 5s\ngeneration:  50 tok in 2s\n")
+        primary.write_text(text)
+        self.assertTrue(wb.is_done(primary, len(text)))
+
+
+class _NoSealPath:
+    """Result of _FakePath.parent / name — a seal sibling that never exists,
+    since is_done() checks that before it ever reads bytes."""
+
+    def exists(self):
+        return False
+
+
+class _NoSeal:
+    """A path-like stand-in for _FakePath.parent: `/` yields a path whose
+    seal sibling never exists."""
+
+    def __truediv__(self, other):
+        return _NoSealPath()
+
+
 class _FakePath:
-    """A minimal stand-in with just the two methods wb._tail() calls
-    (open("rb") + read), so the stall-detection tests don't need a real
-    temp file on disk for a one-line tail check."""
+    """A minimal stand-in with just what wb._tail() and wb._seal_path() call
+    (open("rb") + read, parent/name), so the stall-detection tests don't
+    need a real temp file on disk for a one-line tail check."""
+
+    parent = _NoSeal()
+    name = "fake.md"
 
     def __init__(self, text):
         self._data = text.encode()
