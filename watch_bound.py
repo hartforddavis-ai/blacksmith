@@ -28,12 +28,27 @@ run_sealed.py's occupant (occupant_bound.run()) collects its whole
 response in memory and writes the reply file once, after the run is
 already finished (verified 12 Aug reading occupant_bound.py) — so a
 sealed run in progress has nothing on disk to watch at all. That is a
-runner limitation, not a watcher bug: fixing it means streaming tokens to
-disk from occupant_bound.run(), which is a second build against a
-different file's own contract (see run_sealed.py's docstring on what
-streaming means for its integrity check) and needs its own Law 1 verdict,
-not a footnote here. This tool watches for a sealed run's reply file
-appearing and reports it done — it cannot show progress before that.
+runner limitation, not a watcher bug, and no change to this file can
+close it: fixing it means streaming tokens to disk from
+occupant_bound.run(), a second build that needs its own verdict.
+
+Two claims that stood here until 12 Aug and were wrong, corrected after
+reading the sources rather than repeating them:
+
+  - This file cited "run_sealed.py's docstring on what streaming means
+    for its integrity check". run_sealed.py does not mention streaming
+    anywhere. The citation had no source.
+  - Streaming does not in fact conflict with that integrity check.
+    originals_for() watches KERNEL, the job, and the sources, and
+    excludes the reply file by design — so writing the reply
+    incrementally touches nothing under watch.
+
+run_bound.py already streams and flushes per chunk, and FAILURE_LOG's
+5 Aug entry records that streaming was reverted once by a Law 2 call the
+log itself rules wrong in fact, then RESTORED. So the precedent runs the
+other way: the streaming runner is the only one that has ever completed a
+run. This tool watches for a sealed run's reply file appearing and reports
+it landed — it cannot show progress before that.
 """
 import json
 import pathlib
@@ -60,6 +75,18 @@ BAR_WIDTH = 24
 STAMP = r"\d{8}T\d{6}"
 BOUND_PRIMARY = re.compile(rf"^{STAMP}\.md$")
 SEALED_REPLY = re.compile(rf"^{STAMP}\.reply\.md$")
+
+# Printed before the wait, not buried in the docstring. A run_sealed.py run
+# has NOTHING on disk until it ends — occupant_bound.run() buffers the whole
+# reply and writes once — so this tool legitimately shows no movement for the
+# entire run. That silence has now been misread twice: on 5 Aug a healthy
+# gemma4:12b run was killed by hand at 5m49s (FAILURE_LOG.md), and on 12 Aug
+# the watcher itself was read as not running. Saying so costs one line.
+SEALED_BLIND_NOTE = (
+    "note: if this is a run_sealed.py run, nothing appears here until it\n"
+    "      finishes — the runner buffers the whole reply and writes the file\n"
+    "      once, at the end. Silence below is expected, not a stall."
+)
 
 PROMPT_CHARS_RE = re.compile(r"prompt chars:\s*([\d,]+)")
 FOOTER_RE = re.compile(
@@ -238,6 +265,42 @@ def render_prompt_eval(elapsed, predicted, tick, width=BAR_WIDTH):
     return f"{bar} prompt-eval, {tail}"
 
 
+def think_path_for(path):
+    """The reasoning sidecar beside a run, under either runner's naming.
+
+    run_bound.py writes `<stamp>.thinking.md` beside its bare `<stamp>.md`;
+    run_sealed.py writes the same name beside `<stamp>.reply.md`, stripping
+    `.reply` first. Taking `path.stem` alone gets bound right and sealed
+    wrong — it looks for `<stamp>.reply.thinking.md`, which nothing writes,
+    so a sealed run's reasoning file has never been found by this tool.
+    """
+    return path.parent / (path.stem.removesuffix(".reply") + THINK_SUFFIX)
+
+
+def is_stable(path, interval=1.0):
+    """True if the file has not grown across one interval.
+
+    Read-only, and the only question that distinguishes a finished run from a
+    live one without assuming which runner wrote it. Kept separate from the
+    main loop so the attach path and a future streaming runner ask it the
+    same way.
+    """
+    before = path.stat().st_size
+    time.sleep(interval)
+    return path.stat().st_size == before
+
+
+def render_sealed_done(size):
+    """The completion line for a sealed run, carrying no elapsed figure.
+
+    Deliberately quotes no duration: a sealed reply is written once, after the
+    run is over, so this watcher's clock measures its own wait and nothing
+    else. Its own function so the no-duration property can be asserted.
+    """
+    return (f"✓ sealed reply landed, {size:,} chars · run duration not "
+            f"observable from disk · no token counts for this runner")
+
+
 def render_generation(grown, elapsed):
     rate = grown / max(elapsed, 1e-9)
     return f"writing · {grown:,} chars · {rate:,.0f} chars/s"
@@ -251,15 +314,35 @@ def main(job, model, attach=False):
         if found is None:
             raise SystemExit(f"--attach: no {prefix}*.md in {OUT} to attach to")
         path, kind = found
-        print(f"attaching to {path.relative_to(build_paste.BS)} [{kind}] — counts below "
-              f"are from this moment, not from the start of the run", flush=True)
+        print(f"attaching to {path.relative_to(build_paste.BS)} [{kind}]", flush=True)
+        # A sealed file that was already finished when this watcher arrived
+        # belongs to a run it never observed, and saying "done" about it would
+        # report an outcome with an elapsed time measured from the attach —
+        # which reads as a 2-second run.
+        #
+        # Tested by observation, not by assuming the runner buffers. Today
+        # occupant_bound.run() writes the reply once at the end, so "exists"
+        # and "finished" coincide; if that runner is ever changed to stream
+        # (see this file's header), a live run would have a growing file here
+        # and an existence check alone would call it complete. Watching for
+        # growth is right under both runners.
+        if kind == "sealed" and path.stat().st_size > 0 and is_stable(path):
+            finished = time.strftime("%Y-%m-%d %H:%M:%S",
+                                     time.localtime(path.stat().st_mtime))
+            print(f"already complete when attached — finished {finished}, "
+                  f"{path.stat().st_size:,} chars. Not watched by this process; "
+                  f"no elapsed time is claimed.", flush=True)
+            return
+        print("counts below are from this moment, not from the start of the run",
+              flush=True)
     else:
         already = set(OUT.glob(f"{prefix}*.md"))
         print(f"watching for a new {prefix}*.md in {OUT} …", flush=True)
+        print(SEALED_BLIND_NOTE, flush=True)
         path, kind = wait_for_new_file(prefix, already)
         print(f"watching {path.relative_to(build_paste.BS)} [{kind}]", flush=True)
 
-    think_path = path.parent / (path.stem + THINK_SUFFIX)
+    think_path = think_path_for(path)
     baseline_size = path.stat().st_size
     start = time.monotonic()
     writing = False
@@ -302,8 +385,12 @@ def main(job, model, attach=False):
 
         if kind == "sealed":
             if last_sealed_size == size and size > 0:
-                print(f"\r✓ {elapsed:,.0f}s elapsed · done (sealed reply, {size:,} chars) "
-                      f"· no token counts on disk for this runner".ljust(78))
+                # No elapsed figure here on purpose. `start` is set when the
+                # file was first seen, and a sealed file is only written once
+                # the run is already over — so elapsed measures this watcher's
+                # wait, not the run, and printing it as "elapsed" reads as a
+                # two-second run.
+                print("\r" + render_sealed_done(size).ljust(78))
                 return
             last_sealed_size = size
 

@@ -124,6 +124,71 @@ not Law 2's BUILT, so it bridges nothing.
   probe, and no representation comparison is available from a local model of
   this size. Say so and stop, rather than building a third probe.
 
-**Not run yet.** Nothing here has been executed. The grader does not read
-these items yet — that is the next step, and it must be shown to fail a
-deliberately wrong reply before any run is spent.
+## RUN — 12 Aug 2026, gemma4:12b-it-qat, both representations
+
+Both arms **6/6, BOUND**. By the pre-registered rule above, that is the third
+outcome: the ceiling is the model, not the probe. No third probe was built.
+
+```
+A semantic     calib_govern2     6/6   902.8s   28,954 reasoning chars   INTACT
+B algorithmic  calib_govern2_b   6/6  1,120.4s  31,912 reasoning chars   INTACT
+A again (13th) calib_govern2     6/6   759.4s   26,337 reasoning chars   INTACT
+```
+
+**Arm A was re-run 13 Aug to test whether a single run per arm means
+anything.** It reproduces almost exactly: all six routes, all six verdicts and
+all six deciding passes identical, the same four Evidence cells left empty,
+and the same LEAN-not-SIMPLE call on D. The only variation is one capital
+letter in G and a shorter quote in H. All seven source digests were identical
+to the first run; the only prompt difference is the header's own date stamp.
+
+That matters three ways. The 6/6 is not noise, so the ceiling reading stands
+on two runs rather than one. The empty Evidence cells are a **systematic**
+contract failure of this representation at this model, not a one-off. And
+D-by-LEAN is a systematic reading, not a slip.
+
+**Run-to-run timing spread on arm A is 15.9%** (902.8s → 759.4s), which is the
+figure any A-vs-B timing claim has to clear. B at 1,120.4s exceeds both A runs,
+so "B is slower" survives — but B has n=1 here and its own spread is unmeasured,
+so treat the direction as supported and the magnitude as not established.
+
+Grader shown to discriminate before the runs were spent, as this file
+required: known-good 6/6 PASS, all-LAW1/APPROVE mutant 1/6 FAIL, and
+right-verdict-wrong-route 0/6 FAIL.
+
+Three differences the score does not cover, recorded because they are the only
+places the arms separated:
+
+- **A broke the output contract, B did not.** A left four of six Evidence
+  cells empty and put deciding-pass prose in G's Evidence column. B filled all
+  six, and every quote in both arms was checked against its own paste bytes
+  and found present.
+- **Both decided D by LEAN, not SIMPLE.** D's trap is the duplicate control.
+  Both reached REJECT without naming the pass the answer key names, and
+  scoring route-and-verdict cannot see it.
+- **B was slower in both phases** — 17m14s vs 8m27s in phase 1, 18m40s vs
+  15m03s here — for an identical score. Prompt length does not explain it: B's
+  paste is 10,008 chars against A's 12,170, so the shorter prompt took 24%
+  longer and produced 10% more reasoning. The model works harder against the
+  algorithmic form and arrives at the same place.
+
+## WHAT "ONE VARIABLE" ACTUALLY MEANS HERE — stated because it is looser than it sounds
+
+KERNEL, JOB, SCOPE and SOURCE are byte-identical across the arms, and the JOB
+digest is the same in both (`8cf793525f8a`). What moves is the Law
+representation *and its packaging together*:
+
+```
+A   3 source blocks, 3 labels (LAW 1/LAW 2/LAW 3), 3 digests, 12,170 chars
+B   1 source block,  1 label  (LAWS),               1 digest,  10,008 chars
+```
+
+So the contrast is "semantic Laws as three stamped files" against "algorithmic
+Laws as one" — not wording alone. Phase 1 varied the same bundle, so its
+result carries the same qualification. Both arms scoring 6/6 means this does
+not threaten the ceiling reading; it does mean no claim about wording *by
+itself* is supported by either phase.
+
+The representation question is not answered here and cannot be at this venue.
+Answering it needs a harder probe than a 12B local model tops out on, or a
+larger occupant. It does NOT need another six-item rewrite of this one.

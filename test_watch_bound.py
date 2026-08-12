@@ -11,6 +11,9 @@ baseline and a known elapsed time, not a description of one).
 
 from __future__ import annotations
 
+import contextlib
+import io
+import re
 import tempfile
 import unittest
 from pathlib import Path
@@ -334,6 +337,108 @@ class FakeGrowingFileTests(unittest.TestCase):
         line = wb.render_generation(grown, elapsed=3)
         self.assertIn("300 chars", line)
         self.assertIn("100 chars/s", line)
+
+
+class SealedHonestyTests(unittest.TestCase):
+    """The 12 Aug finding: for a run_sealed.py run the watcher is blind, and
+    both places it spoke anyway reported something it had not observed."""
+
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.root = Path(self._tmp.name)
+        self.runs = self.root / "runs"
+        self.runs.mkdir()
+        self._saved_out, self._saved_bs = wb.OUT, wb.build_paste.BS
+        wb.OUT = self.runs
+        wb.build_paste.BS = self.root
+        self.prefix = "calib_govern2.gemma4-12b-it-qat."
+
+    def tearDown(self):
+        wb.OUT, wb.build_paste.BS = self._saved_out, self._saved_bs
+        self._tmp.cleanup()
+
+    def _attach_output(self):
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            wb.main("calib_govern2", "gemma4:12b-it-qat", attach=True)
+        return buf.getvalue()
+
+    def test_attaching_to_a_finished_run_does_not_claim_to_have_watched_it(self):
+        reply = self.runs / f"{self.prefix}20260812T090000.reply.md"
+        reply.write_text("the whole reply, written once at the end")
+        out = self._attach_output()
+        self.assertIn("already complete when attached", out)
+        # The defect: the old path fell into the loop and printed a done line
+        # two ticks later, against an elapsed measured from the attach — so a
+        # run that took 17 minutes reported "2s elapsed · done". No duration
+        # figure may appear at all; the word itself is fine in a disclaimer.
+        self.assertIsNone(re.search(r"\d+\s*s elapsed", out))
+        self.assertNotIn("✓", out)
+
+    def test_attaching_reports_the_files_own_finish_time_not_the_attach_time(self):
+        reply = self.runs / f"{self.prefix}20260812T090000.reply.md"
+        reply.write_text("x" * 42)
+        out = self._attach_output()
+        self.assertIn("42 chars", out)
+        self.assertIn("finished", out)
+
+    def test_sealed_completion_line_quotes_no_duration(self):
+        line = wb.render_sealed_done(1234)
+        self.assertIn("1,234 chars", line)
+        self.assertNotIn("elapsed", line)
+        self.assertIn("not", line)
+
+    def test_thinking_sidecar_is_found_under_both_runners_naming(self):
+        """The sealed shape was never matched: path.stem keeps `.reply`, so
+        the watcher looked for `<stamp>.reply.thinking.md` and nothing writes
+        that. Both runners write `<stamp>.thinking.md`."""
+        bound = self.runs / f"{self.prefix}20260812T101010.md"
+        sealed = self.runs / f"{self.prefix}20260812T101010.reply.md"
+        want = self.runs / f"{self.prefix}20260812T101010.thinking.md"
+        self.assertEqual(wb.think_path_for(bound), want)
+        self.assertEqual(wb.think_path_for(sealed), want)
+
+    def test_thinking_sidecar_resolves_against_a_real_run_on_disk(self):
+        real = Path.home() / (
+            "Documents/_PROJECTS/SOFTWARE/blacksmith/runs/"
+            "calib_govern2.gemma4-12b-it-qat.20260812T232241.reply.md")
+        if not real.is_file():
+            self.skipTest("phase 2 run not on this machine")
+        self.assertTrue(wb.think_path_for(real).is_file())
+
+    def test_is_stable_is_true_for_a_file_that_is_not_growing(self):
+        p = self.runs / "static.md"
+        p.write_text("finished")
+        self.assertTrue(wb.is_stable(p, interval=0))
+
+    def test_is_stable_is_false_for_a_file_still_being_written(self):
+        sizes = iter([10, 40])
+
+        class _Growing:
+            def stat(self):
+                return type("st", (), {"st_size": next(sizes)})()
+
+        self.assertFalse(wb.is_stable(_Growing(), interval=0))
+
+    def test_attaching_to_a_still_growing_sealed_file_does_not_call_it_complete(self):
+        """Guards the trap: today the runner writes once at the end, so
+        "exists" happens to mean "finished". If it is ever changed to stream,
+        an existence check alone would report a live run as already done."""
+        reply = self.runs / f"{self.prefix}20260812T090000.reply.md"
+        reply.write_text("partial reply, still arriving")
+        saved = wb.is_stable
+        wb.is_stable = lambda path, interval=1.0: False
+        try:
+            out = self._attach_output()
+        finally:
+            wb.is_stable = saved
+        self.assertNotIn("already complete", out)
+        self.assertIn("sealed reply landed", out)
+
+    def test_the_blind_window_is_announced_not_left_in_the_docstring(self):
+        note = wb.SEALED_BLIND_NOTE
+        self.assertIn("run_sealed.py", note)
+        self.assertIn("not a stall", note)
 
 
 if __name__ == "__main__":

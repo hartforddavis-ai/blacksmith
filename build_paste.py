@@ -107,6 +107,30 @@ JOBS = {
         ],
         "out": BS / "calib/PASTE_calib_govern_b.md",
     },
+    # Binding-variant probe, round 3 — the pair above is exhausted: both arms
+    # scored 3/3 on it (12 Aug), so it has no headroom and cannot rank
+    # representations. Six items, four traps, and route no longer predicts
+    # verdict. Its own JOB because the old one names three items and rows
+    # `A`,`B`,`C`; these are D-I. Answers: EXPECTED_calib_govern2.md.
+    "calib_govern2": {
+        "job": BS / "calib/JOB_calib_govern2.md",
+        "sources": LAW_FILES + [
+            ("SCOPE", BS / "calib/SCOPE_laws.md"),
+            ("SOURCE", BS / "calib/SOURCE_calib_govern2.md"),
+        ],
+        "out": BS / "calib/PASTE_calib_govern2.md",
+    },
+    # Same job, same items, same SCOPE — only the Law representation differs.
+    # The calib_govern/calib_govern_b split, re-run on a probe with headroom.
+    "calib_govern2_b": {
+        "job": BS / "calib/JOB_calib_govern2.md",
+        "sources": [
+            ("LAWS", BS / "calib/LAWS_algorithmic.md"),
+            ("SCOPE", BS / "calib/SCOPE_laws.md"),
+            ("SOURCE", BS / "calib/SOURCE_calib_govern2.md"),
+        ],
+        "out": BS / "calib/PASTE_calib_govern2_b.md",
+    },
 }
 
 # Printed, never pasted: the model cannot act on it and the prompt admits

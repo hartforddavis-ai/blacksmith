@@ -112,8 +112,22 @@ GOVERN_VERDICT = re.compile(r"\b(APPROVE|REJECT|N/?A)\b")
 
 # runs/calib_true.qwen3.5-9b.20260807T081500.reply.md -> calib_true
 # Digits are in the class because calib_govern2 exists; without them the job
-# name silently fails to parse and the run has to be named by hand.
-JOB_FROM_NAME = re.compile(r"^(calib_[a-z0-9]+)\.")
+# name silently fails to parse and the run has to be named by hand. Underscore
+# is in it because the second arm of a variant pair is calib_govern2_b.
+JOB_FROM_NAME = re.compile(r"^(calib_[a-z0-9_]+)\.")
+
+# The variant tag run_sealed.py appends after the model, so model_from_name
+# can tell it from a model field. "flat" is never written, so it is not here.
+# Source of truth is build_paste.VARIANTS; not imported, to keep the grader
+# free of the composer.
+VARIANT_FIELDS = ("system", "delimited")
+
+# Extension and sidecar fields the runners append after the timestamp. Every
+# one of these must be here: model_from_name strips from the end, so a shape
+# it does not recognise leaves the timestamp in the model column. `sha256` is
+# in the list because evidence_log seals a `<name>.md.sha256` beside the run,
+# and reading by dot-index used to handle that shape by accident.
+TRAILING_FIELDS = ("md", "reply", "thinking", "sha256")
 
 # Every grading appends one line here. Nothing else writes it, and no hand
 # edit belongs in it. This file exists because rule.py used to print its
@@ -134,11 +148,18 @@ LEDGER_HEADER = (
 def model_from_name(name: str) -> str:
     """calib_false.gemma4-12b-it-qat.20260812T123652.reply.md -> the model.
 
-    Second dot-field. Model names carry hyphens, never dots, so this holds
-    even for the variant runs that insert a field after it.
+    Read by stripping the known fields off both ends, not by index. The old
+    version took the second dot-field on the claim that model names never
+    carry dots; `qwen3.5:9b` is tagged `qwen3.5-9b` and does, so every ledger
+    row for it recorded `qwen3` — the wrong model against a real score.
     """
     parts = name.split(".")
-    return parts[1] if len(parts) > 2 else "unknown"
+    while parts and parts[-1] in TRAILING_FIELDS:
+        parts.pop()
+    parts = parts[1:-1]                     # drop the job, drop the timestamp
+    if parts and parts[-1] in VARIANT_FIELDS:
+        parts.pop()
+    return ".".join(parts) or "unknown"
 
 
 def append_ledger(job: str, path: pathlib.Path, score: str, ok: bool) -> None:
@@ -291,6 +312,7 @@ def main(argv: list[str]) -> int:
         "calib_govern": GOVERN_ANSWERS,
         "calib_govern_b": GOVERN_ANSWERS,
         "calib_govern2": GOVERN2_ANSWERS,
+        "calib_govern2_b": GOVERN2_ANSWERS,
     }
     known = sorted(ANSWERS) + sorted(govern_keys)
     job = argv[2] if len(argv) == 3 else ""

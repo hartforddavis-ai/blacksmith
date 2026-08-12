@@ -10,3 +10,7 @@ table of files.
 | 2026-08-12 13:58 | calib_govern2 | WRONGMODEL | 1/6 | FAIL | calib_govern2.WRONGMODEL.20260812T140000.reply.md |
 | 2026-08-12 13:59 | calib_true | gemma4-12b-it-qat | 3/3 | PASS | calib_true.gemma4-12b-it-qat.20260812T122216.reply.md |
 | 2026-08-12 13:59 | calib_reason | qwen3 | 3/3 | PASS | calib_reason.qwen3.5-9b.20260811T135504.reply.md |
+| 2026-08-12 23:25 | calib_reason | qwen3.5-9b | 3/3 | PASS | calib_reason.qwen3.5-9b.20260811T135504.reply.md |
+| 2026-08-12 23:56 | calib_govern2 | gemma4-12b-it-qat | 6/6 | PASS | calib_govern2.gemma4-12b-it-qat.20260812T232241.reply.md |
+| 2026-08-12 23:56 | calib_govern2_b | gemma4-12b-it-qat | 6/6 | PASS | calib_govern2_b.gemma4-12b-it-qat.20260812T233744.reply.md |
+| 2026-08-13 06:36 | calib_govern2 | gemma4-12b-it-qat | 6/6 | PASS | calib_govern2.gemma4-12b-it-qat.20260813T062333.reply.md |

@@ -116,6 +116,18 @@ class LedgerTests(unittest.TestCase):
         self.assertEqual(
             rule.model_from_name("calib_false.gemma4-12b-it-qat.2026.reply.md"),
             "gemma4-12b-it-qat")
+        # The seal sidecar evidence_log writes beside a run. Reading by
+        # dot-index handled this shape by accident; reading from the end has
+        # to be told about it, or the timestamp lands in the model column.
+        self.assertEqual(
+            rule.model_from_name(
+                "calib_bind.gemma4-12b-it-qat.20260812T071947.md.sha256"),
+            "gemma4-12b-it-qat")
+        # Every real filename shape in runs/ resolves to a bare model name.
+        for name in ("calib_true.qwen3.5-9b.20260811T154820.md.sha256",
+                     "calib_govern2_b.gemma4-12b-it-qat.20260812T233744.thinking.md",
+                     "calib_govern2.gemma4-12b-it-qat.20260812T232241.reply.md"):
+            self.assertNotIn("T", rule.model_from_name(name).replace("qat", ""))
         # The variant runs insert a field after the model; it must still hold.
         self.assertEqual(
             rule.model_from_name("calib_bind.gemma4-12b.system.2026.reply.md"),
