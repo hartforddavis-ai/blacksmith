@@ -41,10 +41,37 @@ real attempt.
 ## Running it
 
 Local only, by design (see "Why this exists" above — the sterility guarantee
-depends on it). Generator is a local model (Ollama) or a chat you paste into
-by hand; there is no cloud-CLI child process and no API key involved.
-`run_sealed.py` / `run_bound.py` are the entry points; `SPEC.md` and
-`CONTEXT_next_session.md` are the fuller orientation.
+depends on it). No pip install, no third-party packages — Python 3.12 stdlib
+only. The one external dependency is [Ollama](https://ollama.com), running
+locally with a model pulled.
+
+```bash
+# 1. Install Ollama and pull one of the three models this repo trusts
+ollama pull gemma4:12b        # or gemma4:12b-it-qat, or qwen3.5:9b
+
+# 2. Run a job against it — writes the reply + a stamped record to runs/
+python3.12 run_bound.py verify gemma4:12b
+
+# 3. (optional) watch it in another pane while it reasons — it goes
+#    silent for minutes between the request and the first token
+python3.12 watch_bound.py verify gemma4:12b
+```
+
+Valid job names: `calib_bind`, `calib_false`, `calib_govern`, `calib_govern2`,
+`calib_govern2_b`, `calib_govern_b`, `calib_reason`, `calib_true`, `evaluate`,
+`verify` (defined in `build_paste.py`'s `JOBS`). An unrecognised job or model
+name refuses immediately rather than running — `run_bound.py` will list the
+valid set back at you.
+
+`run_sealed.py` takes the same two arguments and does the same call, plus a
+source-file integrity measurement around it (see its own docstring for what
+that does and doesn't prove — it's narrower than the name suggests).
+
+There's a second, non-scripted generator path — a bounded Claude chat, prompt
+built by `build_paste.py` and pasted in by hand — for when the job calls for
+a model this repo doesn't have local weights for. No single command for that
+one; `SPEC.md` and `CONTEXT_next_session.md` are the fuller orientation on
+both paths and the reasoning behind each design choice.
 
 ## License
 
