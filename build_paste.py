@@ -19,9 +19,9 @@ KERNEL = BS / "KERNEL_bound.md"
 RULING = BS / "Blacksmith Pipeline Redesign/Bound redesign and prompt/BLACKSMITH_REDESIGN.md"
 
 LAW_FILES = [
-    ("LAW 1", LAWS / "claudes-law 1.md"),
-    ("LAW 2", LAWS / "claudes-law 2.md"),
-    ("LAW 3", LAWS / "claudes-law 3.md"),
+    ("LAW 1", LAWS / "claudes-law-1.md"),
+    ("LAW 2", LAWS / "claudes-law-2.md"),
+    ("LAW 3", LAWS / "claudes-law-3.md"),
 ]
 
 # Both jobs rule the same ruling against the same material; only the task

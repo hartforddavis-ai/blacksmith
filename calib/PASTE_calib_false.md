@@ -110,7 +110,7 @@ the source exactly. A row with no quoted span is not a positive verdict.
     JOB          JOB_calib_false.md           sha256:7ccee67b9f70
 ```
 
-Sources, copied verbatim 2026-08-12:
+Sources, copied verbatim 2026-08-13:
 
 ```
     UNIT7        SOURCE_unit7.md              sha256:dc2907dcb0c6

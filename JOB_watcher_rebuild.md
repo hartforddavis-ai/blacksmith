@@ -92,7 +92,7 @@ known elapsed time.
 ## How to report
 
 Before you write code, state your design and rule it against Claude's Law 1
-(`~/Documents/_PROJECTS/SOFTWARE/Claudes Laws/claudes-law 1.md`): APPROVE or
+(`~/Documents/_PROJECTS/SOFTWARE/Claudes Laws/claudes-law-1.md`): APPROVE or
 REJECT per part, naming the failure each part closes. When the build is done,
 rule it against Law 2. The verdict is the deliverable — do not skip it, and do
 not certify your own work by assertion. Show the test output.

@@ -2,8 +2,7 @@
 """Read-only progress monitor for a run_bound.py or run_sealed.py run. Never
 opens the destination file for writing, never touches Ollama — it only
 watches files those two scripts are already writing, so it cannot
-contaminate a run. The only thing it writes is its own baseline file,
-outside runs/.
+contaminate a run. Writes nothing of its own.
 
 Run in a second pane while the runner runs the same job/model:
 
@@ -17,31 +16,29 @@ is the state a run has to be restarted to escape.
 Answers what run_bound.py's own output can't: during prompt-eval nothing
 prints because nothing has arrived yet, and that silence is what got a
 working gemma4:12b run killed by hand at 5m49s on 5 Aug (FAILURE_LOG.md).
-This turns the silence into a progress bar wherever there is a real
-denominator to measure it against, and an honestly-labelled indeterminate
-bar everywhere there is not — there is no tokenizer here and no invented
-fraction. See watch_bound_baseline.jsonl for the one number this tool
-measures and keeps: chars-per-second during prompt-eval, per model, taken
-from run_bound.py's own completion footer.
 
-run_sealed.py's occupant (occupant_bound.run()) collects its whole
-response in memory and writes the reply file once, after the run is
+13 Aug 2026 rebuild, on Scott's word: an earlier version of this file
+computed elapsed time and a chars/s rate per phase. Reproduced live, that
+rate was wrong the first time it was tried against a real run — it divided
+by time elapsed since the watcher attached, not since the phase it was
+describing actually started, silently folding a 44-second prompt-eval wait
+into a "thinking" rate. Fixing the clock was the wrong fix. Scott's
+correction: "clock is not a solution, state change is the trigger." This
+version computes nothing from time.monotonic() and shows no rate, no
+percentage, no predicted seconds, no bar. It prints one line each time the
+files it watches actually change — a delta and a running total — and
+nothing when they don't. Silence between lines is honest: it means nothing
+has been observed, not that nothing is happening.
+
+run_sealed.py's occupant (occupant_bound.run()) used to collect its whole
+response in memory and write the reply file once, after the run was
 already finished (verified 12 Aug reading occupant_bound.py) — so a
-sealed run in progress has nothing on disk to watch at all. That is a
-runner limitation, not a watcher bug, and no change to this file can
-close it: fixing it means streaming tokens to disk from
-occupant_bound.run(), a second build that needs its own verdict.
-
-Two claims that stood here until 12 Aug and were wrong, corrected after
-reading the sources rather than repeating them:
-
-  - This file cited "run_sealed.py's docstring on what streaming means
-    for its integrity check". run_sealed.py does not mention streaming
-    anywhere. The citation had no source.
-  - Streaming does not in fact conflict with that integrity check.
-    originals_for() watches KERNEL, the job, and the sources, and
-    excludes the reply file by design — so writing the reply
-    incrementally touches nothing under watch.
+sealed run in progress had nothing on disk to watch. occupant_bound.run()
+now streams each chunk to reply_path/think_path as it arrives (TODO !92's
+runner half), and run_sealed.py passes those paths, so a sealed run's
+reply file grows in real time the same as a bound run's. This file's
+"sealed" handling already watches for that growth (see the main loop's
+`kind == "sealed"` branch) rather than assuming a single write at the end.
 
 run_bound.py already streams and flushes per chunk, and FAILURE_LOG's
 5 Aug entry records that streaming was reverted once by a Law 2 call the
@@ -50,7 +47,6 @@ other way: the streaming runner is the only one that has ever completed a
 run. This tool watches for a sealed run's reply file appearing and reports
 it landed — it cannot show progress before that.
 """
-import json
 import pathlib
 import re
 import sys
@@ -59,11 +55,9 @@ import time
 import build_paste  # shared BS path constant only — no coupling to run_bound's request logic
 
 OUT = pathlib.Path(build_paste.BS) / "runs"
-BASELINE_PATH = pathlib.Path(build_paste.BS) / "watch_bound_baseline.jsonl"
 DONE_MARKER = "\nprompt eval: "
 STALL_MARKER = "STALLED:"
 THINK_SUFFIX = ".thinking.md"
-BAR_WIDTH = 24
 
 # The two shapes the runners actually write. run_bound.py's primary file is
 # the bare stamped .md (header at open, footer at completion). run_sealed.py
@@ -76,16 +70,19 @@ STAMP = r"\d{8}T\d{6}"
 BOUND_PRIMARY = re.compile(rf"^{STAMP}\.md$")
 SEALED_REPLY = re.compile(rf"^{STAMP}\.reply\.md$")
 
-# Printed before the wait, not buried in the docstring. A run_sealed.py run
-# has NOTHING on disk until it ends — occupant_bound.run() buffers the whole
-# reply and writes once — so this tool legitimately shows no movement for the
-# entire run. That silence has now been misread twice: on 5 Aug a healthy
-# gemma4:12b run was killed by hand at 5m49s (FAILURE_LOG.md), and on 12 Aug
-# the watcher itself was read as not running. Saying so costs one line.
+# Printed before the wait, not buried in the docstring. occupant_bound.run()
+# now streams to reply_path/think_path as tokens arrive, so a run_sealed.py
+# run's reply file grows the same way a run_bound.py run's does — but there
+# is still a real blind window before the first token, during prompt-eval,
+# where nothing is on disk yet. That silence has been misread twice before:
+# on 5 Aug a healthy gemma4:12b run was killed by hand at 5m49s
+# (FAILURE_LOG.md), and on 12 Aug the watcher itself was read as not
+# running. Saying so costs one line.
 SEALED_BLIND_NOTE = (
-    "note: if this is a run_sealed.py run, nothing appears here until it\n"
-    "      finishes — the runner buffers the whole reply and writes the file\n"
-    "      once, at the end. Silence below is expected, not a stall."
+    "note: if this is a run_sealed.py run, nothing appears here until the\n"
+    "      first token arrives — prompt-eval is silent on disk for both\n"
+    "      runners. Once generation starts, the reply file grows in real\n"
+    "      time. Silence below is expected during prompt-eval, not a stall."
 )
 
 PROMPT_CHARS_RE = re.compile(r"prompt chars:\s*([\d,]+)")
@@ -186,85 +183,6 @@ def parse_footer(text):
     }
 
 
-def load_baseline(model):
-    """Most recent measured prompt-eval chars/s for `model`, or None.
-
-    Scans the whole file rather than seeking from the end: the file is one
-    small row per completed bound run, nowhere near EVIDENCE.jsonl's size.
-    """
-    if not BASELINE_PATH.exists():
-        return None
-    row = None
-    with BASELINE_PATH.open() as f:
-        for line in f:
-            line = line.strip()
-            if not line:
-                continue
-            try:
-                r = json.loads(line)
-            except json.JSONDecodeError:
-                continue
-            if r.get("model") == model and r.get("chars_per_s"):
-                row = r
-    return row
-
-
-def record_baseline(model, prompt_chars, prompt_eval_tok, prompt_eval_s):
-    """Append one calibration row. The only write this tool ever makes, and
-    it lives outside runs/ so it can never be mistaken for run output."""
-    if not prompt_chars or prompt_eval_s <= 0:
-        return
-    row = {
-        "model": model,
-        "prompt_chars": prompt_chars,
-        "prompt_eval_tok": prompt_eval_tok,
-        "prompt_eval_s": prompt_eval_s,
-        "chars_per_s": prompt_chars / prompt_eval_s,
-        "recorded_at": time.strftime("%Y-%m-%dT%H:%M:%S"),
-    }
-    with BASELINE_PATH.open("a") as f:
-        f.write(json.dumps(row) + "\n")
-
-
-def render_bar(fraction, width=BAR_WIDTH):
-    fraction = max(0.0, min(fraction, 1.0))
-    filled = round(fraction * width)
-    return "[" + "#" * filled + "-" * (width - filled) + "]"
-
-
-def indeterminate_bar(tick, width=BAR_WIDTH):
-    """A single marker sliding back and forth — visibly alive, claims no fraction."""
-    span = max(width - 1, 1)
-    pos = tick % (2 * span)
-    pos = pos if pos <= span else 2 * span - pos
-    cells = ["-"] * width
-    cells[pos] = "?"
-    return "[" + "".join(cells) + "]"
-
-
-def predict_prompt_eval_seconds(prompt_chars, baseline):
-    if not baseline or not baseline.get("chars_per_s") or prompt_chars is None:
-        return None
-    cps = baseline["chars_per_s"]
-    if cps <= 0:
-        return None
-    return prompt_chars / cps
-
-
-def render_prompt_eval(elapsed, predicted, tick, width=BAR_WIDTH):
-    if predicted is None:
-        return f"{indeterminate_bar(tick, width)} prompt-eval, indeterminate — no baseline yet"
-    fraction = elapsed / predicted
-    # Capped strictly below 1.0 by at least one cell: a full bar would read
-    # as "done," which only the actual completion signal is allowed to say.
-    cap = (width - 1) / width
-    bar = render_bar(min(fraction, cap), width)
-    tail = f"~{predicted:,.0f}s predicted"
-    if fraction > 1.0:
-        tail += ", past prediction"
-    return f"{bar} prompt-eval, {tail}"
-
-
 def think_path_for(path):
     """The reasoning sidecar beside a run, under either runner's naming.
 
@@ -291,19 +209,33 @@ def is_stable(path, interval=1.0):
 
 
 def render_sealed_done(size):
-    """The completion line for a sealed run, carrying no elapsed figure.
+    """The completion line for a sealed run, carrying no duration figure.
 
-    Deliberately quotes no duration: a sealed reply is written once, after the
-    run is over, so this watcher's clock measures its own wait and nothing
-    else. Its own function so the no-duration property can be asserted.
+    A sealed reply is written once, after the run is over, so nothing this
+    watcher observed brackets the run's actual start. Its own function so
+    the no-duration property can be asserted.
     """
     return (f"✓ sealed reply landed, {size:,} chars · run duration not "
             f"observable from disk · no token counts for this runner")
 
 
-def render_generation(grown, elapsed):
-    rate = grown / max(elapsed, 1e-9)
-    return f"writing · {grown:,} chars · {rate:,.0f} chars/s"
+def render_delta(label, delta, total):
+    """One event line: what changed, and the running total. No rate, no
+    percentage, no time figure of any kind — Scott's correction, 13 Aug:
+    the state change is the signal, not a number derived from a clock."""
+    return f"{label} · +{delta:,} chars · {total:,} total"
+
+
+def render_done(grown, thought, footer):
+    line = f"✓ done · {grown:,} reply chars · {thought:,} reasoning chars"
+    if footer:
+        # Ollama's own reported counts, not this watcher's clock — the model
+        # measured its own prompt-eval and generation time; quoting that
+        # back is not the rejected mechanism.
+        line += (f" · Ollama reports prompt-eval {footer['prompt_eval_tok']:,} tok "
+                 f"in {footer['prompt_eval_s']}s, generation {footer['eval_tok']:,} tok "
+                 f"in {footer['eval_s']}s")
+    return line
 
 
 def main(job, model, attach=False):
@@ -317,21 +249,20 @@ def main(job, model, attach=False):
         print(f"attaching to {path.relative_to(build_paste.BS)} [{kind}]", flush=True)
         # A sealed file that was already finished when this watcher arrived
         # belongs to a run it never observed, and saying "done" about it would
-        # report an outcome with an elapsed time measured from the attach —
-        # which reads as a 2-second run.
+        # claim to have watched a run that finished before this process
+        # existed.
         #
-        # Tested by observation, not by assuming the runner buffers. Today
-        # occupant_bound.run() writes the reply once at the end, so "exists"
-        # and "finished" coincide; if that runner is ever changed to stream
-        # (see this file's header), a live run would have a growing file here
-        # and an existence check alone would call it complete. Watching for
-        # growth is right under both runners.
+        # Tested by observation, not by assuming either runner buffers.
+        # occupant_bound.run() now streams to reply_path (see this file's
+        # header), so a live sealed run has a growing file here just like a
+        # bound run — an existence check alone would wrongly call it
+        # complete. Watching for growth is right under both runners.
         if kind == "sealed" and path.stat().st_size > 0 and is_stable(path):
             finished = time.strftime("%Y-%m-%d %H:%M:%S",
                                      time.localtime(path.stat().st_mtime))
             print(f"already complete when attached — finished {finished}, "
-                  f"{path.stat().st_size:,} chars. Not watched by this process; "
-                  f"no elapsed time is claimed.", flush=True)
+                  f"{path.stat().st_size:,} chars. Not watched by this process.",
+                  flush=True)
             return
         print("counts below are from this moment, not from the start of the run",
               flush=True)
@@ -344,67 +275,58 @@ def main(job, model, attach=False):
 
     think_path = think_path_for(path)
     baseline_size = path.stat().st_size
-    start = time.monotonic()
+    last_grown = 0
+    last_thought = 0
     writing = False
-    tick = 0
     last_sealed_size = None
 
-    prompt_chars = None
-    predicted = None
     if kind == "bound":
         header = path.read_text(errors="ignore")[:1024]
         prompt_chars = parse_header(header)
-        predicted = predict_prompt_eval_seconds(prompt_chars, load_baseline(model))
+        print("waiting for first token"
+              + (f" ({prompt_chars:,} prompt chars sent)" if prompt_chars else "")
+              + " — nothing is observable here; Ollama has the prompt and "
+                "emits nothing until prompt-eval ends", flush=True)
 
     while True:
         time.sleep(1)
-        tick += 1
         size = path.stat().st_size
         grown = size - baseline_size
         thought = think_path.stat().st_size if think_path.exists() else 0
-        elapsed = time.monotonic() - start
 
         if kind == "bound" and has_stalled(path, size):
             # Checked before WRITING latches: the STALLED note's own bytes
             # make this file grow, and without this check first, that growth
-            # reads as a live "writing" state for a run that already exited.
-            print(f"\r✗ {elapsed:,.0f}s elapsed · STALLED — run_bound.py's own "
-                  f"per-read timeout fired, see the file".ljust(78))
+            # reads as a live "writing" state for a process that already exited.
+            print("✗ STALLED — run_bound.py's own per-read timeout fired, "
+                  "see the file", flush=True)
             return
-
-        writing = writing or grown > 0
 
         if kind == "bound" and is_done(path, size):
             footer = parse_footer(path.read_text(errors="ignore"))
-            print(f"\r✓ {elapsed:,.0f}s elapsed · done · {grown:,} reply chars · "
-                  f"{thought:,} reasoning chars".ljust(78))
-            if footer:
-                record_baseline(model, prompt_chars, footer["prompt_eval_tok"],
-                                 footer["prompt_eval_s"])
+            print(render_done(grown, thought, footer), flush=True)
             return
 
         if kind == "sealed":
             if last_sealed_size == size and size > 0:
-                # No elapsed figure here on purpose. `start` is set when the
-                # file was first seen, and a sealed file is only written once
-                # the run is already over — so elapsed measures this watcher's
-                # wait, not the run, and printing it as "elapsed" reads as a
-                # two-second run.
-                print("\r" + render_sealed_done(size).ljust(78))
+                print(render_sealed_done(size), flush=True)
                 return
             last_sealed_size = size
 
         # WRITING once the reply has started, and it stays WRITING — a pause
-        # between reply tokens is not a return to thinking.
-        if writing:
-            line = render_generation(grown, elapsed)
-        elif thought:
-            line = f"{indeterminate_bar(tick)} thinking · {thought:,} chars, no reply yet"
-        elif kind == "bound":
-            line = render_prompt_eval(elapsed, predicted, tick)
-        else:
-            line = f"{indeterminate_bar(tick)} sealed run — nothing observable until it finishes"
-        print(f"\r{elapsed:,.0f}s elapsed · {line}".ljust(78), end="", flush=True)
+        # between reply tokens is not a return to thinking. Only one event
+        # per poll: growth in the reply takes priority over a thinking
+        # sidecar that (per the model's own behaviour) should have stopped
+        # growing once the reply started.
+        if grown > last_grown:
+            writing = True
+            print(render_delta("writing", grown - last_grown, grown), flush=True)
+            last_grown = grown
+        elif thought > last_thought and not writing:
+            print(render_delta("thinking", thought - last_thought, thought), flush=True)
+            last_thought = thought
+        # else: nothing changed this poll. Silence, not a redraw — a state
+        # change is the only thing that earns a line.
 
 
 if __name__ == "__main__":

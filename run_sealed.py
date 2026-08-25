@@ -130,14 +130,37 @@ def main(job, model, variant="flat"):
             pre = attest.freeze("pre", scratch, external_paths=originals)
             print(f"pre-attest frozen ({len(originals)} source files watched)", flush=True)
 
+            # The reply is written beside the record under the same naming
+            # convention run_bound.py uses, so both land in the same set.
+            # Variant tag included (flat omits it) so 3 variants of one job
+            # against one model don't collide or silently overwrite. Paths
+            # are computed before the call (not after) so occupant_bound.run
+            # can stream into them as tokens arrive — a run that never
+            # finishes still leaves what it got, same as run_bound.py
+            # (TODO !92).
+            tag = model.replace(":", "-") if variant == "flat" else f"{model.replace(':', '-')}.{variant}"
+            reply = evidence_log.OUT_DIR / f"{job}.{tag}.{stamp}.reply.md"
+            reply.parent.mkdir(parents=True, exist_ok=True)
+            think_path = reply.parent / (reply.stem.removesuffix(".reply") + ".thinking.md")
+
             print(f"{model} [{variant}]: sending {len(prompt):,} chars prompt"
                   f"{f' + {len(system):,} chars system' if system else ''}"
                   f" — silent while it reasons", flush=True)
-            run = occupant_bound.run(model, prompt, system=system)
+            run = occupant_bound.run(
+                model, prompt, system=system, reply_path=reply, think_path=think_path)
             print(f"first token {run.first_token_s:,.1f}s, "
                   f"final {run.final_token_s:,.1f}s, {len(run.response):,} reply chars, "
                   f"{len(run.thinking):,} reasoning chars",
                   flush=True)
+
+            # Reasoning goes to its own file, never into the reply — same rule
+            # run_bound.py follows and for the same reason: the reply is what
+            # quotes.py scans, and mixing the two would hand a checker the
+            # model's self-persuasion as if it were the answer. occupant_bound
+            # only opens think_path if there was a first thought to write, so
+            # empty thinking still means no file — same as before.
+            if not run.thinking:
+                think_path = None
 
             post = attest.freeze("post", scratch, external_paths=originals)
             report = attest.compare(pre, post)
@@ -148,30 +171,6 @@ def main(job, model, variant="flat"):
                     f"integrity is {report['integrity']}: {report['detail']}. No "
                     "evidence entry written — a record with an invented delta is "
                     "worse than no record.")
-
-            # The reply is written beside the record under the same naming
-            # convention run_bound.py uses, so both land in the same set.
-            # Variant tag included (flat omits it) so 3 variants of one job
-            # against one model don't collide or silently overwrite.
-            tag = model.replace(":", "-") if variant == "flat" else f"{model.replace(':', '-')}.{variant}"
-            reply = evidence_log.OUT_DIR / f"{job}.{tag}.{stamp}.reply.md"
-            reply.parent.mkdir(parents=True, exist_ok=True)
-            reply.write_text(run.response, encoding="utf-8")
-
-            # Reasoning goes to its own file, never into the reply — same rule
-            # run_bound.py follows and for the same reason: the reply is what
-            # quotes.py scans, and mixing the two would hand a checker the
-            # model's self-persuasion as if it were the answer. Only written
-            # when there was something to write (empty thinking gets no file).
-            think_path = None
-            if run.thinking:
-                think_path = reply.parent / (reply.stem.removesuffix(".reply") + ".thinking.md")
-                think_path.write_text(
-                    f"# {job} · {model} · {stamp} — model reasoning\n\n"
-                    "NOT the reply. Recorded so a truncated or empty reply can be "
-                    "diagnosed against what the model actually spent its tokens on.\n\n"
-                    "---\n\n" + run.thinking,
-                    encoding="utf-8")
 
             written = evidence_log.write(
                 job=job, model=model, timestamp=stamp,

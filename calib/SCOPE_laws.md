@@ -11,9 +11,9 @@ Law 3 gates how much may be under construction at once. Default is REJECT.
 failure each fixes, before touching anything.** Scott enforces this — nothing
 detects a skipped verdict.
 
-Law 1 — Minimum Robust Design Filter: @laws/claudes-law 1.md
-Law 2 — Minimum Robust Build Filter: @laws/claudes-law 2.md
-Law 3 — Minimum Robust Construction Filter: @laws/claudes-law 3.md
+Law 1 — Minimum Robust Design Filter: @laws/claudes-law-1.md
+Law 2 — Minimum Robust Build Filter: @laws/claudes-law-2.md
+Law 3 — Minimum Robust Construction Filter: @laws/claudes-law-3.md
 
 **Scope:** a design proposal runs Law 1. A completed build claim runs Law 2.
 A multi-step construction plan runs Law 3, to bound how much is open at once.

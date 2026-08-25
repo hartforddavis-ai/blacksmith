@@ -22,6 +22,7 @@ here too.
 from __future__ import annotations
 
 import json
+import pathlib
 import time
 import urllib.request
 from dataclasses import dataclass
@@ -34,6 +35,15 @@ CLEAN_MODELS = frozenset({"gemma4:12b", "gemma4:12b-it-qat", "qwen3.5:9b"})
 
 class OccupantError(Exception):
     """The bound call could not be completed, or its output could not be staged."""
+
+# NOT given run_bound.py's unload()-on-exit fix (13 Aug): that fix's own
+# test file states its no-live-Ollama-dependency contract outright, and a
+# finally-block unload() here silently broke it — every "unit" test run
+# started firing real network calls. The orphan that prompted the fix was
+# demonstrated against run_bound.py specifically; run_sealed.py sharing
+# the same exposure is plausible but unverified, so it stays a named gap,
+# not an inherited fix. Revisit if run_sealed.py demonstrates the same
+# failure, with a way to keep the test file's contract true.
 
 
 @dataclass(frozen=True)
@@ -49,7 +59,10 @@ class BoundRun:
     system: str | None = None
 
 
-def run(model: str, prompt: str, timeout: float = 1800, system: str | None = None) -> BoundRun:
+def run(
+    model: str, prompt: str, timeout: float = 1800, system: str | None = None,
+    reply_path: pathlib.Path | None = None, think_path: pathlib.Path | None = None,
+) -> BoundRun:
     """POST `prompt` to a local, clean model and collect the full response.
 
     `system`, when given, goes in Ollama's own `system` field — a channel
@@ -63,6 +76,14 @@ def run(model: str, prompt: str, timeout: float = 1800, system: str | None = Non
     `chunk.get("thinking")` since this function existed; without the flag
     that field could only ever be empty. Every prior run_sealed.py run,
     including this session's three, has this gap.
+
+    `reply_path`/`think_path`, when given, are opened and written to on every
+    chunk — same pattern as `run_bound.py`: a run that never finishes still
+    leaves what it got on disk instead of nothing (TODO !92, watch_bound.py's
+    own docstring named this gap). `think_path` is only opened once there is
+    a first thought to write, same as `run_bound.py`. Neither is required —
+    `run()` still returns the full `BoundRun` either way, and callers that
+    pass nothing behave exactly as before.
     """
     if model not in CLEAN_MODELS:
         raise OccupantError(
@@ -87,21 +108,39 @@ def run(model: str, prompt: str, timeout: float = 1800, system: str | None = Non
     chunks = []
     thoughts = []
     done_reason = ""
+    reply_out = reply_path.open("w") if reply_path is not None else None
+    think_out = None
     try:
-        with urllib.request.urlopen(req, timeout=timeout) as r:
-            for line in r:
-                chunk = json.loads(line)
-                if first_token is None:
-                    first_token = time.monotonic() - start
-                chunks.append(chunk.get("response", ""))
-                thoughts.append(chunk.get("thinking") or "")
-                if chunk.get("done"):
-                    done_reason = chunk.get("done_reason", "")
-                    break
-    except OccupantError:
-        raise
-    except Exception as exc:
-        raise OccupantError(f"bound call failed: {exc}") from exc
+        try:
+            with urllib.request.urlopen(req, timeout=timeout) as r:
+                for line in r:
+                    chunk = json.loads(line)
+                    if first_token is None:
+                        first_token = time.monotonic() - start
+                    response = chunk.get("response", "")
+                    thought = chunk.get("thinking") or ""
+                    chunks.append(response)
+                    thoughts.append(thought)
+                    if reply_out is not None:
+                        reply_out.write(response)
+                        reply_out.flush()
+                    if thought and think_path is not None:
+                        if think_out is None:
+                            think_out = think_path.open("w")
+                        think_out.write(thought)
+                        think_out.flush()
+                    if chunk.get("done"):
+                        done_reason = chunk.get("done_reason", "")
+                        break
+        except OccupantError:
+            raise
+        except Exception as exc:
+            raise OccupantError(f"bound call failed: {exc}") from exc
+    finally:
+        if reply_out is not None:
+            reply_out.close()
+        if think_out is not None:
+            think_out.close()
 
     if first_token is None:
         raise OccupantError("no tokens received before the connection closed")

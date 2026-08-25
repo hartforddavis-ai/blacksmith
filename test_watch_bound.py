@@ -3,10 +3,16 @@
 No live Ollama, no live runner — that would be a flaky integration test
 wearing a unit test's clothes. Covered instead: filename classification
 against fake files with the two runners' real shapes, header/footer
-parsing against text the runners actually write, the baseline file
-round-trip, and the bar-rendering math against known elapsed/baseline
-values (the actual proof the JOB asked for: rendered output for a known
-baseline and a known elapsed time, not a description of one).
+parsing against text the runners actually write, the delta-event
+rendering, and an integration test driving main()'s loop against real
+files on disk with time.sleep patched, proving state-change events fire
+on real deltas and stay silent otherwise — the actual proof the JOB asked
+for, not a description of the mechanism.
+
+13 Aug 2026: the baseline-file and bar/rate-rendering tests that used to
+live here were deleted along with the code they covered. Scott's call,
+after a live run showed the rate math was wrong the first time it ran
+against reality: "clock is not a solution, state change is the trigger."
 """
 
 from __future__ import annotations
@@ -17,6 +23,7 @@ import re
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 import watch_bound as wb
 
@@ -225,118 +232,105 @@ class _FakePath:
         return io.BytesIO(self._data)
 
 
-class BaselineRoundTripTests(unittest.TestCase):
-    def setUp(self):
-        self._tmp = tempfile.TemporaryDirectory()
-        wb.BASELINE_PATH = Path(self._tmp.name) / "watch_bound_baseline.jsonl"
+class DeltaRenderingTests(unittest.TestCase):
+    """render_delta/render_done carry no clock: no elapsed figure, no rate,
+    no percentage, no predicted anything. Just what changed and the running
+    total, or (for done) the model's own reported counts."""
 
-    def tearDown(self):
-        self._tmp.cleanup()
+    def test_delta_line_carries_no_clock_derived_number(self):
+        line = wb.render_delta("thinking", delta=203, total=203)
+        self.assertIn("thinking", line)
+        self.assertIn("+203 chars", line)
+        self.assertIn("203 total", line)
+        for forbidden in ("%", "chars/s", "elapsed", "predicted"):
+            self.assertNotIn(forbidden, line)
 
-    def test_no_baseline_file_yet_is_none(self):
-        self.assertIsNone(wb.load_baseline("gemma4:12b"))
+    def test_delta_line_total_is_cumulative_not_the_delta(self):
+        line = wb.render_delta("writing", delta=40, total=310)
+        self.assertIn("+40 chars", line)
+        self.assertIn("310 total", line)
 
-    def test_record_then_load_round_trips_chars_per_s(self):
-        wb.record_baseline("gemma4:12b", prompt_chars=10000,
-                            prompt_eval_tok=2500, prompt_eval_s=100)
-        row = wb.load_baseline("gemma4:12b")
-        self.assertEqual(row["chars_per_s"], 100.0)
+    def test_done_line_with_footer_quotes_ollamas_own_numbers(self):
+        footer = {"prompt_eval_tok": 100, "prompt_eval_s": 5,
+                   "eval_tok": 50, "eval_s": 2}
+        line = wb.render_done(grown=200, thought=1500, footer=footer)
+        self.assertIn("200 reply chars", line)
+        self.assertIn("1,500 reasoning chars", line)
+        self.assertIn("100 tok", line)
+        self.assertIn("5s", line)
 
-    def test_load_ignores_other_models(self):
-        wb.record_baseline("gemma4:12b", prompt_chars=1000,
-                            prompt_eval_tok=250, prompt_eval_s=10)
-        self.assertIsNone(wb.load_baseline("qwen3.5:9b"))
-
-    def test_load_returns_the_most_recent_row_for_a_model(self):
-        wb.record_baseline("gemma4:12b", prompt_chars=1000,
-                            prompt_eval_tok=250, prompt_eval_s=10)
-        wb.record_baseline("gemma4:12b", prompt_chars=2000,
-                            prompt_eval_tok=500, prompt_eval_s=10)
-        row = wb.load_baseline("gemma4:12b")
-        self.assertEqual(row["chars_per_s"], 200.0)
-
-    def test_zero_duration_is_not_recorded(self):
-        # A footer that rounded to 0s (secs() has no decimals) would divide
-        # by zero if recorded — the honest response is to record nothing.
-        wb.record_baseline("gemma4:12b", prompt_chars=1000,
-                            prompt_eval_tok=1, prompt_eval_s=0)
-        self.assertIsNone(wb.load_baseline("gemma4:12b"))
-
-    def test_baseline_file_lives_outside_runs(self):
-        wb.record_baseline("gemma4:12b", prompt_chars=1000,
-                            prompt_eval_tok=250, prompt_eval_s=10)
-        self.assertNotIn("runs", wb.BASELINE_PATH.parts)
+    def test_done_line_without_footer_omits_ollama_numbers_not_fakes_them(self):
+        line = wb.render_done(grown=50, thought=0, footer=None)
+        self.assertIn("50 reply chars", line)
+        self.assertNotIn("Ollama reports", line)
 
 
-class BarRenderingTests(unittest.TestCase):
-    """The JOB's own proof requirement: rendered output for a known baseline
-    and a known elapsed time, not a description of the math."""
-
-    def test_no_baseline_renders_indeterminate_and_says_so(self):
-        line = wb.render_prompt_eval(elapsed=30, predicted=None, tick=0)
-        self.assertIn("indeterminate", line)
-        self.assertIn("no baseline yet", line)
-        self.assertNotIn("%", line)
-
-    def test_known_baseline_renders_a_real_fraction_at_half_predicted(self):
-        # 5,000 chars at a measured 100 chars/s predicts 50s. 25s elapsed is
-        # exactly half — the bar must show half its cells filled.
-        predicted = wb.predict_prompt_eval_seconds(
-            5000, {"chars_per_s": 100.0})
-        self.assertEqual(predicted, 50.0)
-        line = wb.render_prompt_eval(elapsed=25, predicted=predicted, tick=0)
-        expected_bar = wb.render_bar(0.5)
-        self.assertIn(expected_bar, line)
-        self.assertIn("~50s predicted", line)
-
-    def test_elapsed_past_prediction_says_so_and_never_fakes_completion(self):
-        line = wb.render_prompt_eval(elapsed=120, predicted=50.0, tick=0)
-        self.assertIn("past prediction", line)
-        # The bar itself must stop short of full — 100% here would claim
-        # measurement of something that hasn't finished.
-        self.assertNotEqual(line.split()[0], wb.render_bar(1.0))
-
-    def test_render_bar_is_proportional_to_fraction(self):
-        self.assertEqual(wb.render_bar(0.0), "[" + "-" * wb.BAR_WIDTH + "]")
-        self.assertEqual(wb.render_bar(1.0), "[" + "#" * wb.BAR_WIDTH + "]")
-        quarter = wb.render_bar(0.25)
-        self.assertEqual(quarter.count("#"), round(0.25 * wb.BAR_WIDTH))
-
-    def test_generation_reports_measured_throughput_no_percentage(self):
-        line = wb.render_generation(grown=2000, elapsed=10)
-        self.assertIn("2,000 chars", line)
-        self.assertIn("200 chars/s", line)
-        self.assertNotIn("%", line)
-
-    def test_predict_returns_none_without_a_baseline(self):
-        self.assertIsNone(wb.predict_prompt_eval_seconds(5000, None))
-        self.assertIsNone(wb.predict_prompt_eval_seconds(5000, {}))
-
-    def test_indeterminate_bar_never_claims_a_fixed_position(self):
-        positions = {wb.indeterminate_bar(t) for t in range(6)}
-        self.assertGreater(len(positions), 1)
-
-
-class FakeGrowingFileTests(unittest.TestCase):
-    """A real file on disk, grown across two reads, driving the same
-    grown/elapsed math main() uses — the fake-growing-file proof the JOB
-    asked for, without running main()'s infinite loop."""
+class EventDrivenLoopTests(unittest.TestCase):
+    """Integration proof for main()'s loop: it prints a line only when a
+    file it watches actually changed, carries a delta and a running total,
+    and computes nothing from time.monotonic(). Reproduces the 13 Aug
+    correction directly — the earlier version printed every second whether
+    or not anything had changed, and computed a rate from a clock that (in
+    a real run) had been running since before the phase it described even
+    started."""
 
     def setUp(self):
         self._tmp = tempfile.TemporaryDirectory()
-        self.path = Path(self._tmp.name) / "fake_reply.md"
-        self.path.write_text("")
+        self.root = Path(self._tmp.name)
+        self.runs = self.root / "runs"
+        self.runs.mkdir()
+        self._saved_out, self._saved_bs = wb.OUT, wb.build_paste.BS
+        wb.OUT = self.runs
+        wb.build_paste.BS = self.root
 
     def tearDown(self):
+        wb.OUT, wb.build_paste.BS = self._saved_out, self._saved_bs
         self._tmp.cleanup()
 
-    def test_growth_between_two_reads_matches_the_rendered_rate(self):
-        baseline_size = self.path.stat().st_size
-        self.path.write_text("x" * 300)
-        grown = self.path.stat().st_size - baseline_size
-        line = wb.render_generation(grown, elapsed=3)
-        self.assertIn("300 chars", line)
-        self.assertIn("100 chars/s", line)
+    def test_only_real_deltas_print_and_no_number_is_clock_derived(self):
+        prefix = "verify.gemma4-12b."
+        stamp = "20260813T070000"
+        header = "# header\n\nprompt chars:  100\n\n---\n\n"
+        primary = self.runs / f"{prefix}{stamp}.md"
+        primary.write_text(header)
+        think_path = self.runs / f"{prefix}{stamp}.thinking.md"
+
+        # One step per poll. Steps 1 and 3 change nothing on disk — the
+        # loop must stay silent on those polls, not redraw a stale line.
+        script = [
+            lambda: None,                                       # 1: prompt-eval, no change
+            lambda: think_path.write_text("x" * 10),             # 2: thinking +10
+            lambda: think_path.write_text("x" * 10),             # 3: unchanged, no event
+            lambda: think_path.write_text("x" * 30),             # 4: thinking +20
+            lambda: primary.write_text(header + "hello"),        # 5: writing +5
+            lambda: primary.write_text(
+                header + "hello world\n\n---\n\n"
+                "prompt eval: 10 tok in 1s\ngeneration:  5 tok in 1s\n"
+                "reasoning:   30 chars (separate file)\n"),      # 6: done
+        ]
+        steps = iter(script)
+
+        def fake_sleep(_):
+            next(steps, lambda: None)()
+
+        buf = io.StringIO()
+        with mock.patch.object(wb.time, "sleep", side_effect=fake_sleep), \
+             contextlib.redirect_stdout(buf):
+            wb.main("verify", "gemma4:12b", attach=True)
+
+        out = buf.getvalue()
+
+        self.assertIn("thinking · +10 chars · 10 total", out)
+        self.assertIn("thinking · +20 chars · 30 total", out)
+        self.assertIn("writing · +5 chars · 5 total", out)
+        self.assertEqual(out.count("thinking ·"), 2)  # step 3's no-op must not print a third
+        done_lines = [l for l in out.splitlines() if l.startswith("✓")]
+        self.assertEqual(len(done_lines), 1)
+        self.assertIn("Ollama reports", done_lines[0])
+
+        for forbidden in ("s elapsed", "chars/s", "%", "predicted"):
+            self.assertNotIn(forbidden, out)
+        self.assertNotRegex(out, r"\[[-#?]+\]")  # no bar, no wandering marker
 
 
 class SealedHonestyTests(unittest.TestCase):
