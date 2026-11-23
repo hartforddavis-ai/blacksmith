@@ -1,6 +1,6 @@
 # THE THREE LAWS — ALGORITHMIC FORM (Candidate B)
 
-Copied byte-exact from PRIME's frozen representation pressure test,
+Copied byte-exact from Brass Axioms' frozen representation pressure test,
 Part 2. Not retyped, not summarised, not repaired.
 
 # PART 2 — FROZEN CANDIDATE B

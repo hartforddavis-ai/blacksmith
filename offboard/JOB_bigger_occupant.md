@@ -56,7 +56,7 @@ chat sites are far larger than anything on your laptop.
 ## BLOCKED — do not run this yet
 
 This job assumes the chat sites will **apply** the Laws when pasted. That is not
-established, and it is precisely what PRIME's Stage 2 measures.
+established, and it is precisely what Brass Axioms' Stage 2 measures.
 
 **Run `PRIME_RESEARCH_CONTROLLED_RECORD/offboard_stage2_v2/` first.** If the
 sites will not apply the Laws, this measures refusals instead of representation
@@ -134,7 +134,7 @@ difference from this job as if the local baseline were solid.
 ## Two claims not to make when you write it up
 
 **One venue, one result.** This was the 12 August retraction and it still binds.
-The local occupant is gemma over HTTP; PRIME's failure was Claude refusing a
+The local occupant is gemma over HTTP; Brass Axioms' failure was Claude refusing a
 pasted block; browser chats are a **third** venue again. A result here is a
 result about browser chats. It does not transfer to the local pipeline, and the
 local results do not transfer here.

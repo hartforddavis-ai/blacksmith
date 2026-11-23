@@ -3,7 +3,7 @@
 A build system for working with a generator (an AI model or agent) in a loop,
 designed so the loop can't drift off the task, can't invent facts, and can't
 carry state it wasn't given — governed by the
-[PRIME AI Operating Laws](https://github.com/hartforddavis-ai/prime-ai-operating-laws).
+[Brass Axioms](https://github.com/hartforddavis-ai/shearpin).
 
 ## Why this exists
 
